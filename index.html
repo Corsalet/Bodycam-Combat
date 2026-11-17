@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BODYCAM // ОПЕРАЦИЯ «КАРАКУМ»</title>
+<style>
+/* ============ BASE ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Courier New',ui-monospace,monospace;user-select:none;-webkit-user-select:none}
+#c3d{position:fixed;inset:0;z-index:0;display:block}
+#c3d canvas{display:block;width:100%;height:100%;filter:saturate(.82) contrast(1.08) brightness(1.01)}
+.hidden{display:none!important}
+
+/* ============ BODYCAM LAYER ============ */
+.bc{position:fixed;inset:0;pointer-events:none;z-index:5}
+#bc-vig{background:radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0,0,0,.42) 86%, rgba(0,0,0,.72) 100%);z-index:5}
+#bc-grain{opacity:.09;mix-blend-mode:overlay;z-index:6}
+#bc-grain canvas{width:100%;height:100%}
+#bc-lbt,#bc-lbb{position:fixed;left:0;right:0;height:2.6vh;background:#000;z-index:7}
+#bc-lbt{top:0}#bc-lbb{bottom:0}
+.bc-hudtext{color:#e8e6df;font-weight:700;letter-spacing:.08em;text-shadow:0 0 3px rgba(0,0,0,.9),0 0 1px rgba(0,0,0,1);font-size:clamp(11px,1.35vw,15px);z-index:8;pointer-events:none}
+#bc-tl{position:fixed;top:calc(2.6vh + 10px);left:16px;display:flex;align-items:center;gap:9px}
+#rec-dot{width:10px;height:10px;border-radius:50%;background:#e33;box-shadow:0 0 6px #e33;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:.15}}
+#bc-br{position:fixed;bottom:calc(2.6vh + 10px);right:16px;text-align:right}
+#bc-bat{display:inline-block;width:20px;height:9px;border:1.5px solid #e8e6df;position:relative;top:1px;margin-right:5px}
+#bc-bat::after{content:'';position:absolute;right:-4px;top:2px;width:2px;height:3px;background:#e8e6df}
+#bc-batfill{position:absolute;left:1px;top:1px;bottom:1px;background:#e8e6df;width:80%}
+
+/* ============ HUD ============ */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .4s}
+#hud.on{opacity:1}
+#tickets{position:fixed;top:calc(2.6vh + 8px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px}
+#tk-row{display:flex;align-items:center;gap:12px}
+.tk{font-size:clamp(13px,1.6vw,17px);font-weight:700;text-shadow:0 0 4px #000}
+.tk-ru{color:#ff5b4d}.tk-us{color:#6fa8ff}
+#timer{color:#eee;font-weight:700;font-size:clamp(12px,1.5vw,16px);text-shadow:0 0 4px #000}
+#pts-row{display:flex;gap:7px}
+.pt{width:24px;height:24px;border:1.5px solid rgba(255,255,255,.75);border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#ddd;background:rgba(0,0,0,.35);text-shadow:0 0 3px #000}
+.pt.ru{border-color:#ff5b4d;color:#ff5b4d;background:rgba(120,20,10,.45)}
+.pt.us{border-color:#6fa8ff;color:#6fa8ff;background:rgba(15,40,120,.45)}
+.pt.contested{border-color:#ffcf4d;color:#ffcf4d;animation:blink .8s steps(1) infinite}
+#mm-wrap{position:fixed;top:calc(2.6vh + 10px);right:14px;text-align:right}
+#minimap{width:148px;height:148px;background:rgba(10,12,8,.55);border:1px solid rgba(255,255,255,.28);display:block}
+#mm-cap{font-size:10px;color:#cfcabb;margin-top:3px;letter-spacing:.1em}
+#feed{position:fixed;top:calc(2.6vh + 186px);right:14px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;max-width:46vw}
+.fitem{font-size:clamp(10px,1.2vw,13px);color:#ddd;background:rgba(0,0,0,.4);padding:2px 7px;border-left:2px solid #888;text-shadow:0 0 3px #000;transition:opacity .6s}
+.fitem b{font-weight:700}
+.fitem .fw{color:#a8a290;font-size:.85em}
+.fitem.mine{border-left-color:#ffcf4d}
+.fitem.out{opacity:0}
+.fitem .tr{color:#ff5b4d}.fitem .tu{color:#6fa8ff}
+#hp-wrap{position:fixed;left:18px;bottom:calc(2.6vh + 14px)}
+#hp-lab{font-size:10px;color:#cfcabb;letter-spacing:.15em;margin-bottom:3px}
+#hp-row{display:flex;align-items:center;gap:9px}
+#hp-num{font-size:clamp(20px,2.6vw,30px);font-weight:700;color:#e8e6df;text-shadow:0 0 4px #000;min-width:52px}
+#hp-bar{width:clamp(120px,15vw,190px);height:11px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.45);position:relative}
+#hp-fill{position:absolute;left:1px;top:1px;bottom:1px;width:100%;background:#9fbf6a;transition:width .18s,background .3s}
+#hp-fill.low{background:#e0503c}#hp-fill.mid{background:#e0a23c}
+#ammo-wrap{position:fixed;right:18px;bottom:calc(2.6vh + 14px);text-align:right}
+#wname{font-size:clamp(11px,1.3vw,14px);color:#cfcabb;letter-spacing:.12em;margin-bottom:2px}
+#ammo-row{display:flex;align-items:baseline;justify-content:flex-end;gap:7px}
+#ammo-cur{font-size:clamp(26px,3.4vw,40px);font-weight:700;color:#e8e6df;text-shadow:0 0 4px #000}
+#ammo-cur.dry{color:#e0503c}
+#ammo-res{font-size:clamp(13px,1.6vw,18px);color:#a8a290;font-weight:700}
+#wmode{font-size:10px;color:#a8a290;letter-spacing:.14em;margin-top:1px}
+#xhair{position:fixed;left:50%;top:50%;width:0;height:0;z-index:11;pointer-events:none}
+.xl{position:absolute;background:rgba(240,240,230,.92);box-shadow:0 0 2px rgba(0,0,0,.8)}
+#xh-d{width:2px;height:2px;left:-1px;top:-1px}
+#xh-u{width:2px;height:9px;left:-1px}
+#xh-b{width:2px;height:9px;left:-1px}
+#xh-l{width:9px;height:2px;top:-1px}
+#xh-r{width:9px;height:2px;top:-1px}
+#hitm{position:fixed;left:50%;top:50%;width:0;height:0;z-index:12;opacity:0;pointer-events:none}
+.hx{position:absolute;width:11px;height:2px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.9)}
+.hx.k{background:#ff5340}
+#hitm.show{opacity:1;transition:none}
+#hitm.fade{opacity:0;transition:opacity .35s}
+#cap-wrap{position:fixed;left:50%;bottom:calc(2.6vh + 92px);transform:translateX(-50%);width:min(320px,60vw);text-align:center;opacity:0;transition:opacity .25s}
+#cap-wrap.on{opacity:1}
+#cap-lab{font-size:clamp(11px,1.4vw,14px);font-weight:700;color:#eee;text-shadow:0 0 4px #000;margin-bottom:4px;letter-spacing:.06em}
+#cap-bar{height:10px;border:1px solid rgba(255,255,255,.55);background:rgba(0,0,0,.5);position:relative}
+#cap-fill{position:absolute;left:1px;top:1px;bottom:1px;background:#ffcf4d;width:0%}
+#cap-fill.ru{background:#ff5b4d}#cap-fill.us{background:#6fa8ff}
+#hint{position:fixed;left:50%;bottom:calc(2.6vh + 58px);transform:translateX(-50%);font-size:clamp(10px,1.25vw,13px);color:#d8d4c6;text-shadow:0 0 4px #000;letter-spacing:.08em;white-space:nowrap}
+#dmg-vig{background:radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(190,20,10,.55) 100%);opacity:0;transition:opacity .5s;z-index:9}
+#fade{position:fixed;inset:0;background:#000;z-index:30;opacity:0;pointer-events:none;transition:opacity .5s}
+#fade.on{opacity:1}
+
+/* ============ SCOPE (sniper) ============ */
+#scope{position:fixed;inset:0;z-index:12;pointer-events:none}
+#scope .sc-hole{position:absolute;left:50%;top:50%;width:min(72vh,72vw);height:min(72vh,72vw);transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 200vmax rgba(2,2,2,.985), inset 0 0 60px rgba(0,0,0,.95), inset 0 0 12px rgba(0,0,0,.8);border:2px solid #050505}
+#scope .sc-v{position:absolute;left:50%;top:0;bottom:0;width:1.6px;background:rgba(10,10,10,.9);transform:translateX(-50%)}
+#scope .sc-h{position:absolute;top:50%;left:0;right:0;height:1.6px;background:rgba(10,10,10,.9);transform:translateY(-50%)}
+#scope .sc-c{position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:rgba(200,30,20,.9);transform:translate(-50%,-50%)}
+#scope .sc-mil{position:absolute;left:50%;top:50%;color:rgba(20,20,20,.85);font-size:11px;font-weight:700}
+
+/* ============ OVERLAY MENUS ============ */
+.ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(5,7,5,.88)}
+.ov::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.16) 2px 3px);pointer-events:none}
+.ov .panel{position:relative;width:min(560px,92vw);max-height:92vh;overflow-y:auto;border:1px solid rgba(255,255,255,.2);background:linear-gradient(160deg,rgba(14,17,13,.96),rgba(9,11,9,.97));box-shadow:0 0 60px rgba(0,0,0,.8);padding:clamp(14px,2.4vw,24px) clamp(16px,2.8vw,30px);color:#d8d4c6}
+.ov .panel::-webkit-scrollbar{width:6px}.ov .panel::-webkit-scrollbar-thumb{background:#3a3d33}
+.ov-title{font-size:clamp(20px,3.4vw,30px);font-weight:700;color:#e8e6df;letter-spacing:.1em;line-height:1.2}
+.ov-title .amber{color:#ffcf4d}
+.ov-sub{font-size:clamp(10px,1.3vw,12.5px);color:#a8a290;margin:4px 0 12px;letter-spacing:.08em}
+.sect-lab{font-size:10px;color:#8a8674;letter-spacing:.22em;margin:12px 0 7px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:4px}
+.btn-row{display:flex;gap:10px}
+.opt-btn{flex:1;padding:10px 8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.22);color:#cfcabb;font-family:inherit;font-weight:700;font-size:clamp(12px,1.5vw,15px);letter-spacing:.08em;cursor:pointer;transition:all .15s;text-align:center}
+.opt-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.opt-btn.sel{border-color:#ffcf4d;color:#ffcf4d;background:rgba(120,90,10,.14)}
+.opt-btn.sel-ru{border-color:#ff5b4d;color:#ff5b4d;background:rgba(120,20,10,.16)}
+.opt-btn.sel-us{border-color:#6fa8ff;color:#6fa8ff;background:rgba(15,40,120,.16)}
+.opt-btn small{display:block;font-weight:400;font-size:.72em;color:#8a8674;margin-top:4px;letter-spacing:.03em}
+.opt-btn.sel small,.opt-btn.sel-ru small,.opt-btn.sel-us small{color:#cfcabb}
+#loadout{margin-top:10px;padding:8px 11px;border:1px dashed rgba(255,255,255,.25);font-size:clamp(11px,1.35vw,13px);color:#cfcabb;line-height:1.75}
+#loadout b{color:#ffcf4d}
+.go-btn{width:100%;margin-top:14px;padding:12px;background:#1d2b16;border:1px solid #5a8a3a;color:#cfe8a8;font-family:inherit;font-weight:700;font-size:clamp(14px,1.9vw,18px);letter-spacing:.16em;cursor:pointer;transition:all .15s}
+.go-btn:hover{background:#2a3d1f;color:#e8ffcf;box-shadow:0 0 18px rgba(90,140,50,.35)}
+.go-btn.amber{background:#2b2413;border-color:#8a6a2a;color:#ffe2a0}
+.go-btn.amber:hover{box-shadow:0 0 18px rgba(140,100,30,.4)}
+.ctl-grid{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:clamp(10px,1.25vw,12px);color:#a8a290;margin-top:6px}
+.ctl-grid b{color:#cfcabb;font-weight:700;white-space:nowrap}
+.set-row{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:#a8a290;letter-spacing:.08em}
+.set-row input[type=range]{flex:1;accent-color:#ffcf4d;pointer-events:auto}
+.ov-foot{margin-top:16px;font-size:10px;color:#6e6a5c;letter-spacing:.1em;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#ov-death{background:rgba(30,4,2,.72)}
+#death-lab{font-size:clamp(24px,4vw,38px);font-weight:700;color:#ff5340;letter-spacing:.2em;text-align:center}
+#death-killer{margin-top:10px;text-align:center;color:#d8d4c6;font-size:clamp(12px,1.5vw,15px)}
+#death-count{margin-top:16px;text-align:center;color:#ffcf4d;font-weight:700;font-size:clamp(15px,2vw,20px);letter-spacing:.1em}
+#end-title{font-size:clamp(24px,4vw,36px);font-weight:700;letter-spacing:.14em;text-align:center}
+#end-title.ru{color:#ff5b4d}#end-title.us{color:#6fa8ff}#end-title.draw{color:#ffcf4d}
+#end-sub{text-align:center;color:#a8a290;font-size:12px;margin-top:6px;letter-spacing:.1em}
+#end-stats{margin:18px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:clamp(12px,1.5vw,14px);max-width:320px}
+#end-stats b{color:#ffcf4d;text-align:right}
+#end-stats span{color:#cfcabb}
+.p-cam{position:absolute;top:12px;left:16px;font-size:10px;color:#8a8674;letter-spacing:.15em}
+.p-cam::before{content:'● ';color:#e33;animation:blink 1s steps(1) infinite}
+#net-note{margin-top:8px;font-size:10px;color:#6e6a5c;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="c3d"></canvas>
+
+<!-- BODYCAM LAYER -->
+<div class="bc" id="bc-vig"></div>
+<div class="bc" id="bc-grain"><canvas id="grain" width="192" height="108"></canvas></div>
+<div id="bc-lbt"></div><div id="bc-lbb"></div>
+<div class="bc-hudtext" id="bc-tl"><span id="rec-dot"></span><span>REC</span><span id="bc-tc">TC 00:00:00</span></div>
+<div class="bc-hudtext" id="bc-br"><span id="bc-bat"><span id="bc-batfill"></span></span><span id="bc-battxt">BATT 86%</span><br><span id="bc-date">CAM_01 // OP.КАРАКУМ</span></div>
+<div class="bc" id="dmg-vig"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="tickets">
+    <div id="tk-row"><span class="tk tk-ru" id="tk-ru">RU 250</span><span id="timer">10:00</span><span class="tk tk-us" id="tk-us">US 250</span></div>
+    <div id="pts-row">
+      <span class="pt" data-pt="A">A</span><span class="pt" data-pt="B">B</span><span class="pt" data-pt="C">C</span>
+    </div>
+  </div>
+  <div id="mm-wrap"><canvas id="minimap" width="148" height="148"></canvas><div id="mm-cap">КАРАКУМ-9 // СЕКТОР 4</div></div>
+  <div id="feed"></div>
+  <div id="hp-wrap"><div id="hp-lab">ЗДОРОВЬЕ</div><div id="hp-row"><span id="hp-num">100</span><div id="hp-bar"><div id="hp-fill"></div></div></div></div>
+  <div id="ammo-wrap"><div id="wname">АК-74</div><div id="ammo-row"><span id="ammo-cur">30</span><span id="ammo-res">/ 120</span></div><div id="wmode">АВТО</div></div>
+  <div id="xhair"><span class="xl" id="xh-d"></span><span class="xl" id="xh-u"></span><span class="xl" id="xh-b"></span><span class="xl" id="xh-l"></span><span class="xl" id="xh-r"></span></div>
+  <div id="hitm"><span class="hx" style="transform:translate(-14px,-9px) rotate(45deg)"></span><span class="hx" style="transform:translate(3px,-9px) rotate(-45deg)"></span><span class="hx" style="transform:translate(-14px,7px) rotate(-45deg)"></span><span class="hx" style="transform:translate(3px,7px) rotate(45deg)"></span></div>
+  <div id="cap-wrap"><div id="cap-lab">ЗАХВАТ B — 0%</div><div id="cap-bar"><div id="cap-fill"></div></div></div>
+  <div id="hint">ЦЕЛЬ: ЗАХВАТИТЬ И УДЕРЖИВАТЬ ТОЧКИ A · B · C</div>
+</div>
+
+<!-- SCOPE -->
+<div id="scope" class="hidden"><div class="sc-hole"></div><div class="sc-v"></div><div class="sc-h"></div><div class="sc-c"></div></div>
+
+<!-- MENU -->
+<div class="ov" id="ov-menu">
+  <div class="panel">
+    <div class="p-cam">CAM_01 // СИСТЕМА АКТИВНА</div>
+    <div class="ov-title">BODYCAM<span class="amber">//</span> ОПЕРАЦИЯ «КАРАКУМ»</div>
+    <div class="ov-sub">ТАКТИЧЕСКИЙ ШУТЕР • ОФЛАЙН-РАУНД С БОТАМИ • ЗАХВАТ ТОЧЕК • 10 МИНУТ</div>
+    <div class="sect-lab">СТОРОНА</div>
+    <div class="btn-row">
+      <button class="opt-btn sel-ru" id="sel-ru" data-side="RU">РОССИЯ<small>ВС РФ • 127-я МОТСТРЕЛКОВАЯ</small></button>
+      <button class="opt-btn" id="sel-us" data-side="US">США<small>US ARMY • 2-я БРОНЕТАНКОВАЯ</small></button>
+    </div>
+    <div class="sect-lab">КЛАСС</div>
+    <div class="btn-row">
+      <button class="opt-btn sel" id="cls-assault" data-cls="assault">ШТУРМОВИК<small>АВТОМАТ + ПИСТОЛЕТ</small></button>
+      <button class="opt-btn" id="cls-sniper" data-cls="sniper">СНАЙПЕР<small>СНАЙПЕРСКАЯ ВИНТОВКА + ПИСТОЛЕТ</small></button>
+    </div>
+    <div id="loadout"></div>
+    <div class="sect-lab">УПРАВЛЕНИЕ</div>
+    <div class="ctl-grid">
+      <b>W A S D</b><span>движение</span>
+      <b>SHIFT</b><span>спринт</span>
+      <b>ЛКМ</b><span>огонь</span>
+      <b>ПКМ</b><span>прицел / оптика</span>
+      <b>R</b><span>перезарядка</span>
+      <b>1 / 2</b><span>смена оружия</span>
+      <b>ESC</b><span>пауза</span>
+    </div>
+    <div class="set-row">ЧУВСТВ. <input type="range" id="sens" min="20" max="200" value="100"><span id="sens-v">1.0</span></div>
+    <div class="set-row">ГРОМКОСТЬ <input type="range" id="vol" min="0" max="100" value="70"><span id="vol-v">70</span></div>
+    <button class="go-btn" id="btn-deploy">▶ В БОЙ</button>
+    <div class="ov-foot"><span id="bc-build">BUILD 1 • v0.1.0</span><span>РЕЖИМ: ЗАХВАТ (ОФЛАЙН)</span></div>
+    <div id="net-note">NET: онлайн-кооп/-versus режим будет подключён позже (заготовки PeerJS уже в коде).</div>
+  </div>
+</div>
+
+<!-- DEATH -->
+<div class="ov hidden" id="ov-death"><div class="panel" style="border-color:rgba(255,80,60,.4)">
+  <div class="p-cam">CAM_01 // СИГНАЛ ПОТЕРЯН</div>
+  <div id="death-lab">ВЫ УБИТЫ</div>
+  <div id="death-killer">—</div>
+  <div id="death-count">РЕСПАВН ЧЕРЕЗ 6</div>
+</div></div>
+
+<!-- ROUND END -->
+<div class="ov hidden" id="ov-end"><div class="panel">
+  <div class="p-cam">CAM_01 // ЗАПИСЬ ЗАВЕРШЕНА</div>
+  <div id="end-title">—</div>
+  <div id="end-sub">—</div>
+  <div id="end-stats"></div>
+  <button class="go-btn" id="btn-again">▶ ЕЩЁ РАЗ</button>
+  <button class="go-btn amber" id="btn-menu" style="margin-top:10px">В ГЛАВНОЕ МЕНЮ</button>
+</div></div>
+
+<!-- PAUSE -->
+<div class="ov hidden" id="ov-pause"><div class="panel" style="max-width:380px">
+  <div class="p-cam">CAM_01 // ПАУЗА</div>
+  <div class="ov-title">ПАУЗА</div>
+  <div class="ov-sub">РАУНД ПРИОСТАНОВЛЕН</div>
+  <div class="set-row">ЧУВСТВ. <input type="range" id="sens2" min="20" max="200" value="100"><span id="sens2-v">1.0</span></div>
+  <div class="set-row">ГРОМКОСТЬ <input type="range" id="vol2" min="0" max="100" value="70"><span id="vol2-v">70</span></div>
+  <button class="go-btn" id="btn-resume">▶ ПРОДОЛЖИТЬ</button>
+  <button class="go-btn amber" id="btn-quit" style="margin-top:10px">В ГЛАВНОЕ МЕНЮ (СДАТЬСЯ)</button>
+</div></div>
+
+<div id="fade"></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/GLTFLoader.js"></script>
+<script src="js/SkeletonUtils.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
