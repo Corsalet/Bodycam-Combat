@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 1;
-const BC_VERSION = '0.1.0';
+const BC_BUILD = 2;
+const BC_VERSION = '0.1.1';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -442,6 +442,7 @@ function simplify(root) {
     if (o.isMesh) {
       const conv = m => {
         const nm = new THREE.MeshLambertMaterial({ color: (m.color && m.color.clone()) || new THREE.Color(0xcccccc), name: m.name });
+        if (o.isSkinnedMesh) nm.skinning = true; // r128: без флага SkinnedMesh рисуется в bind-позе (T)
         if (m.map) nm.map = m.map;
         if (m.transparent) { nm.transparent = true; nm.opacity = m.opacity; }
         return nm;
@@ -464,7 +465,19 @@ function allLoaded() {
   GLB.soldierH = bb.getSize(new THREE.Vector3()).y;
   buildViewmodels();
   const btn = $('btn-deploy');
-  btn.disabled = false; btn.textContent = '▶ В БОЙ';
+  /* SkeletonUtils в этой сборке не перенаправляет skeleton на кости клона — боты застывают в T-позе.
+     Поэтому каждый бот получает СВОЙ экземпляр солдата (отдельный parse — у loader'а bind корректный). */
+  GLB.soldierSkins = [];
+  const need = 14;
+  let done = 0;
+  const finish = () => { btn.disabled = false; btn.textContent = '▶ В БОЙ'; };
+  for (let i = 0; i < need; i++) {
+    gltfLoader.load('assets/soldier.glb', g => {
+      simplify(g.scene);
+      GLB.soldierSkins.push(g);
+      if (++done >= need) finish();
+    }, undefined, () => { done++; if (done >= need) finish(); });
+  }
 }
 
 /* --- нормализация модели: масштаб -> ствол вдоль -Z -> центр в 0 ---
@@ -485,9 +498,38 @@ function worldVerts(root) {
   });
   return out;
 }
-function normalizeWeapon(sceneIn, targetLen, forceFlip) {
-  const wrap = new THREE.Group();
+function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
   sceneIn.updateMatrixWorld(true);
+  // отсекаем «оторванные» детали (патроны рядом с моделью): кластеры касаний,
+  // удаляем всё, что не связано с основным телом оружия
+  const parts = [];
+  sceneIn.traverse(o => { if (o.isMesh) parts.push(o); });
+  if (parts.length > 1) {
+    const bbs = parts.map(o => new THREE.Box3().setFromObject(o));
+    const uni = new THREE.Box3();
+    for (const b of bbs) uni.union(b);
+    const maxL = Math.max(...uni.getSize(new THREE.Vector3()).toArray());
+    const marg = maxL * 0.01;
+    const parent = new Array(parts.length).fill(-1).map((_, i) => i);
+    const find = i => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    for (let i = 0; i < parts.length; i++) {
+      const ai = bbs[i].clone().expandByScalar(marg);
+      for (let j = i + 1; j < parts.length; j++) {
+        if (ai.intersectsBox(bbs[j])) { const a = find(i), b = find(j); if (a !== b) parent[a] = b; }
+      }
+    }
+    // главный кластер — тот, где самый крупный меш
+    const bigSz = new Array(parts.length).fill(0);
+    for (let i = 0; i < parts.length; i++) bigSz[i] = Math.max(...bbs[i].getSize(new THREE.Vector3()).toArray());
+    let mainRoot = 0, mainSz = 0;
+    for (let i = 0; i < parts.length; i++) { const r = find(i); if (bigSz[i] > mainSz) { mainSz = bigSz[i]; mainRoot = r; } }
+    const drop = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (find(i) !== mainRoot && bigSz[i] < maxL * 0.3) drop.push(parts[i]);
+    }
+    for (const m of drop) if (m.parent) m.parent.remove(m);
+  }
+  const wrap = new THREE.Group();
   let bb = new THREE.Box3().setFromObject(sceneIn);
   const size0 = bb.getSize(new THREE.Vector3());
   sceneIn.scale.setScalar(targetLen / Math.max(size0.x, size0.y, size0.z, 0.001));
@@ -525,18 +567,8 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip) {
   wrap.add(sceneIn);
   wrap.quaternion.copy(qA);
   if (forceFlip) wrap.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+  if (rollFix) wrap.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rollFix));
   wrap.updateMatrixWorld(true);
-  bb = new THREE.Box3().setFromObject(wrap);
-  const c0 = bb.getCenter(new THREE.Vector3());
-  let meanY = 0, n = 0;
-  for (let i = 0; i < verts.length; i += 3) {
-    const v = new THREE.Vector3(verts[i], verts[i + 1], verts[i + 2]).applyMatrix4(wrap.matrixWorld);
-    meanY += v.y - c0.y; n++;
-  }
-  if (meanY > 0) {
-    wrap.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, -1), Math.PI));
-    wrap.updateMatrixWorld(true);
-  }
   bb = new THREE.Box3().setFromObject(wrap);
   const c2 = bb.getCenter(new THREE.Vector3());
   wrap.position.set(-c2.x, -c2.y, -c2.z); // центр в 0 (пока wrap в (0,0,0))
@@ -547,12 +579,12 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip) {
 /* ================= ОРУЖИЕ ================= */
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
-  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.23, -0.25, -0.50], adsPos: [0, -0.176, -0.30], kick: 1.0, vmPitch: 0.03, flip: true, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.23, -0.25, -0.52], adsPos: [0, -0.178, -0.32], kick: 0.9, vmPitch: 0.03, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.24, -0.27, -0.58], adsPos: [0, -0.16, -0.34], kick: 1.8, vmPitch: 0.05, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.26, -0.30, -0.64], adsPos: [0, -0.155, -0.36], kick: 2.6, vmPitch: 0.06, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
-  makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.2, -0.22, -0.38], adsPos: [0, -0.16, -0.26], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
-  deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.2, -0.225, -0.40], adsPos: [0, -0.165, -0.28], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
+  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.28, -0.74], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.02, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.28, -0.78], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.02, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.26, -0.30, -0.86], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.04, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.27, -0.32, -0.92], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.05, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.23, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
+  deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.235, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
 /* классы и стороны */
 const CLASSES = {
@@ -568,7 +600,7 @@ function buildViewmodels() {
     const g = GLB[key];
     if (!g) continue;
     const src = g.scene; // не клонируем: каждый ствол используется 1 раз
-    const wrap = normalizeWeapon(src, def.len, def.flip);
+    const wrap = normalizeWeapon(src, def.len, def.flip, def.rollFix);
     const holder = new THREE.Group();
     holder.add(wrap);
     holder.visible = false;
@@ -671,9 +703,19 @@ function soldierTintedMats(team) {
   SOLDIER_TINT[team] = map;
   return map;
 }
-function makeSoldier(team) {
-  const clone = THREE.SkeletonUtils.clone(GLB.soldier.scene);
-  clone.scale.setScalar(1.8 / GLB.soldierH);
+function makeSoldier(team, wkey) {
+  /* собственный экземпляр солдата из пула (bind корректен); fallback — clone */
+  const skinObj = GLB.soldierSkins && GLB.soldierSkins.length ? GLB.soldierSkins.pop() : null;
+  const clone = skinObj ? skinObj.scene : THREE.SkeletonUtils.clone(GLB.soldier.scene);
+  if (skinObj) {
+    // при переиспользовании скина восстанавливаем исходную (bind) позу костей
+    if (!skinObj.restQ) {
+      skinObj.restQ = {};
+      clone.traverse(o => { if (o.isBone) skinObj.restQ[o.name] = o.quaternion.clone(); });
+    } else {
+      clone.traverse(o => { if (o.isBone && skinObj.restQ[o.name]) o.quaternion.copy(skinObj.restQ[o.name]); });
+    }
+  }
   const tint = soldierTintedMats(team);
   clone.traverse(o => {
     if (o.isMesh) {
@@ -682,15 +724,56 @@ function makeSoldier(team) {
       o.material = Array.isArray(o.material) ? nm : nm[0];
       o.frustumCulled = false; // скелетная анимация за пределами bbox
     }
+    if (o.isSkinnedMesh) {
+      // пересчитываем boneInverses из текущих matrixWorld (модель в метрах):
+      // boneMatrix = mw(теперь) × mw(bind) = чистый дельта-поворот, позы работают
+      clone.updateMatrixWorld(true);
+      const inv = o.skeleton.bones.map(b => new THREE.Matrix4().copy(b.matrixWorld).invert());
+      o.bind(new THREE.Skeleton(o.skeleton.bones, inv), o.matrixWorld);
+    }
   });
-  const mixer = new THREE.AnimationMixer(clone);
-  if (GLB.soldier.animations && GLB.soldier.animations.length) {
-    mixer.clipAction(GLB.soldier.animations[0]).play();
-  }
+  const U = 1; // масштаб на клоне (как в исходной загрузке), units на метр
+  clone.scale.setScalar(1.8 / GLB.soldierH);
   const wrap = new THREE.Group();
   wrap.add(clone);
   scene.add(wrap);
-  return { wrap, mixer };
+  /* анимация в GLB нет (клип нулевой длительности) — используем процедурные позы; mixer не создаём */
+  // --- процедурная анимация: поза покоя + оси качания ---
+  const bones = {}, rest = new Map(), ax = {};
+  const want = { hips: 'hips_01', spine: 'spine_06', chest: 'chest_07', head: 'head_09',
+    armL: 'armL_011', forearmL: 'forearmL_012', armR: 'armR_025', forearmR: 'forearmR_026',
+    uplegL: 'uplegL_02', legL: 'legL_03', uplegR: 'uplegR_038', legR: 'legR_039' };
+  for (const k in want) {
+    const bn = clone.getObjectByName(want[k]);
+    if (!bn) continue;
+    bones[k] = bn;
+    rest.set(k, { q: bn.quaternion.clone(), p: bn.position.clone() });
+  }
+  wrap.updateMatrixWorld(true);
+  for (const k in bones) {
+    const q = new THREE.Quaternion();
+    bones[k].parent.getWorldQuaternion(q).invert();
+    ax[k] = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize(); // замах вперёд-назад
+    ax[k + 'X'] = new THREE.Vector3(1, 0, 0).applyQuaternion(q).normalize(); // опускание/наклон вбок
+  }
+  // --- оружие в руках (независимый экземпляр viewmodel-обёртки) ---
+  let gun = null;
+  if (wkey && VM[wkey]) {
+    const def = WPN[wkey];
+    const gw = VM[wkey].holder.children[0].clone(true);
+    const gh = new THREE.Group();
+    gh.add(gw);
+    gh.rotation.y = -Math.PI / 2;            // дуло (-Z) вперёд по +X солдата
+    gh.position.set(0.45, 1.02, -0.14);      // перед правым бедром, вне тела
+    const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.spark, color: 0xffd27a, transparent: true, depthTest: false, blending: THREE.AdditiveBlending }));
+    fl.scale.setScalar(def.len * 0.16);
+    fl.position.set(0, def.len * 0.03, -def.len * 0.48);
+    fl.visible = false;
+    gh.add(fl);
+    wrap.add(gh);
+    gun = { holder: gh, flash: fl, flashT: 0, name: def.name };
+  }
+  return { wrap, bones, rest, ax, gun, skinObj, units: U };
 }
 
 /* ================= ИГРОК ================= */
@@ -965,7 +1048,10 @@ function movePlayer(dt) {
 const BOTS = [];
 const tickets = { RU: 250, US: 250 };
 function spawnBots() {
-  for (const b of BOTS) { scene.remove(b.mesh.wrap); }
+  for (const b of BOTS) {
+    scene.remove(b.mesh.wrap);
+    if (b.mesh.skinObj) GLB.soldierSkins.push(b.mesh.skinObj); // скин обратно в пул
+  }
   BOTS.length = 0;
   const teams = [P.team === 'RU' ? 'US' : 'RU', P.team];
   let ni = { RU: 0, US: 0 };
@@ -973,14 +1059,17 @@ function spawnBots() {
     const n = (team === P.team) ? 6 : 7; // 6 союзников + 7 противников (игрок 8-й за свою)
     for (let i = 0; i < n; i++) {
       const name = BOT_NAMES[team][ni[team]++ % BOT_NAMES[team].length];
-      const mesh = makeSoldier(team);
+      const wkey = (i % 4 === 3) ? (team === 'RU' ? 'svd' : 'm82') : (team === 'RU' ? 'ak74' : 'm16');
+      const mesh = makeSoldier(team, wkey);
       const b = {
         team, name, mesh, alive: true, hp: 100,
         pos: new THREE.Vector3(), yaw: 0,
         state: 'advance', goal: null, enemy: null,
         nextThink: rand(0, 0.5), nextShot: 0, burst: 0, pauseT: 0,
         respawnT: 0, strafe: 0, kills: 0, deaths: 0, seesPlayer: false,
-        weaponName: team === 'RU' ? 'АК-74' : 'М16',
+        weaponName: WPN[wkey].name,
+        holdA: rand(0, Math.PI * 2), holdR: rand(2.5, 7), holdYaw: null, scanT: rand(0, 6),
+        animT: rand(0, 6), speed: 0,
       };
       botRespawn(b, true);
       BOTS.push(b);
@@ -997,6 +1086,8 @@ function botRespawn(b, instant) {
   }
   b.pos.y = terrainH(b.pos.x, b.pos.z);
   b.hp = 100; b.alive = true; b.state = 'advance'; b.enemy = null; b.goal = null;
+  b.holdA = rand(0, Math.PI * 2); b.holdR = rand(2.5, 7); b.holdYaw = null; b.speed = 0;
+  if (b.mesh.gun) b.mesh.gun.holder.visible = true;
   b.mesh.wrap.visible = true;
   b.mesh.wrap.rotation.z = 0;
   b.mesh.wrap.position.copy(b.pos);
@@ -1006,6 +1097,7 @@ function botDie(b, killer, weapon) {
   b.alive = false; b.respawnT = 7; b.enemy = null;
   tickets[b.team] = Math.max(0, tickets[b.team] - 1);
   if (killer === 'player') { P.kills++; AUDIO.kill(); }
+  else if (killer && killer.kills !== undefined) killer.kills++;
   addFeed(killer, killer === 'player' ? P.team : (killer && killer.team), b, weapon || b.weaponName);
   // падение
   b.mesh.wrap.rotation.z = rand(-1.5, 1.5) * 0.14 + (Math.random() < 0.5 ? 1.35 : -1.35);
@@ -1017,19 +1109,20 @@ function damageBot(b, dmg, killer, weaponName) {
   if (killer === 'player' && b.hp > 0 && !b.enemy) { b.enemy = { pos: P.pos, isP: true }; b.state = 'combat'; } // ответный огонь
   if (b.hp <= 0) botDie(b, killer, weaponName);
 }
-/* выбор цели-точки: ближайшая не-своя, иначе оборона своей */
+/* выбор цели-точки: ближайшая не-своя, иначе оборона своей; офсеты разбрасывают ботов */
 function pickGoal(b) {
   let best = null, bestScore = 1e9;
   for (const p of POINTS) {
     const owned = p.owner === b.team;
     const d = dist2d(b.pos.x, b.pos.z, p.x, p.z);
-    let score = d;
+    let score = d + rand(0, 24); // разброс — чтобы толпа не шла в одну точку
     if (owned) score += 90; // свои менее приоритетны
     if (p.owner && p.owner !== b.team) score -= 40; // чужие — приоритет
     if (!owned && p.prog !== 0 && p.prog * (b.team === 'RU' ? 1 : -1) > 0) score += 30; // частично наша
     if (score < bestScore) { bestScore = score; best = p; }
   }
   b.goal = best;
+  b.holdA = rand(0, Math.PI * 2); b.holdR = rand(2.5, 7);
 }
 function botLOS(b, tx, ty, tz) {
   const o = new THREE.Vector3(b.pos.x, b.pos.y + 1.5, b.pos.z);
@@ -1059,7 +1152,15 @@ function botThink(b, dt) {
     b.state = 'combat';
   } else {
     if (b.state === 'combat') { b.state = 'advance'; b.enemy = null; }
-    if (!b.goal || dist2d(b.pos.x, b.pos.z, b.goal.x, b.goal.z) < 6 || Math.random() < 0.08) pickGoal(b);
+    let need = !b.goal;
+    if (b.goal) {
+      const gd = dist2d(b.pos.x, b.pos.z, b.goal.x, b.goal.z);
+      const capturing = !b.goal.owner || b.goal.owner !== b.team;
+      if (capturing && gd < b.goal.r * 0.8) need = false; // стоим и держим, пока точка не наша
+      else if (gd < 6) need = true; // дошли (или точка стала нашей) — ищем следующую
+      else if (Math.random() < 0.05) need = true;
+    }
+    if (need) pickGoal(b);
   }
 }
 function botShoot(b, dt) {
@@ -1073,9 +1174,25 @@ function botShoot(b, dt) {
   b.burst--;
   if (b.burst <= 0) b.pauseT = rand(0.4, 1.1);
   AUDIO.enemyShot(dist);
-  // попадание по цели
+  // вспышка + трассер — стрельбу видно
+  if (b.mesh.gun) {
+    b.mesh.gun.flash.visible = true;
+    b.mesh.gun.flashT = 0.05;
+  }
   const hitChance = clamp(0.40 - dist * 0.0038, 0.07, 0.4) * (e.isP ? (P.sprint ? 0.72 : 1) : 1);
-  if (Math.random() < hitChance) {
+  const willHit = Math.random() < hitChance;
+  const tp = new THREE.Vector3(
+    e.pos.x + (willHit ? 0 : rand(-1.2, 1.2)),
+    (e.isP ? e.pos.y - 0.35 : e.pos.y + 1.25) + (willHit ? 0 : rand(-0.5, 0.8)),
+    e.pos.z + (willHit ? 0 : rand(-1.2, 1.2))
+  );
+  if (b.mesh.gun) {
+    const mz = new THREE.Vector3();
+    b.mesh.gun.flash.getWorldPosition(mz);
+    spawnTracer(mz, tp);
+  }
+  // попадание по цели
+  if (willHit) {
     const dmg = rand(8, 17);
     if (e.isP) damagePlayer(dmg, b.name, b.weaponName);
     else damageBot(e.bot, dmg * 2.2, b, b.weaponName);
@@ -1086,6 +1203,7 @@ function botShoot(b, dt) {
 }
 function moveBot(b, dt) {
   if (!b.alive) return;
+  b.speed = 0;
   let vx = 0, vz = 0;
   if (b.state === 'combat' && b.enemy) {
     // лицом к врагу, лёгкий стрейф
@@ -1099,17 +1217,41 @@ function moveBot(b, dt) {
     const sd = Math.sin(b.strafe * 1.7) * 1.6;
     const rx = Math.cos(b.yaw), rz = -Math.sin(b.yaw);
     vx = rx * sd * dt; vz = rz * sd * dt;
+    b.speed = Math.abs(sd);
   } else if (b.goal) {
-    const gx = b.goal.x + Math.sin(b.team === 'RU' ? 1 : 3) * 4;
-    const gz = b.goal.z + Math.cos(b.team === 'RU' ? 1 : 3) * 4;
-    const wantYaw = Math.atan2(gx - b.pos.x, gz - b.pos.z);
-    let dy = wantYaw - b.yaw;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
-    b.yaw += clamp(dy, -4 * dt, 4 * dt);
-    const spd = 4.3;
-    vx = Math.sin(b.yaw) * spd * dt; vz = Math.cos(b.yaw) * spd * dt;
+    const hx = b.goal.x + Math.cos(b.holdA) * b.holdR;
+    const hz = b.goal.z + Math.sin(b.holdA) * b.holdR;
+    const dx = hx - b.pos.x, dz = hz - b.pos.z;
+    const dh = Math.hypot(dx, dz);
+    if (dh > 1.8) {
+      const wantYaw = Math.atan2(dx, dz);
+      let dy = wantYaw - b.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      b.yaw += clamp(dy, -4 * dt, 4 * dt);
+      const spd = 4.3;
+      vx = Math.sin(b.yaw) * spd * dt; vz = Math.cos(b.yaw) * spd * dt;
+      b.speed = spd; b.holdYaw = null;
+    } else {
+      // дошли до своего места у точки: стоим и осматриваемся
+      if (b.holdYaw === null) b.holdYaw = b.yaw;
+      b.scanT += dt;
+      b.yaw = b.holdYaw + Math.sin(b.scanT * 0.7) * 0.9;
+    }
   }
+  // расталкивание ботов — без толкучки и хороводов
+  let sx = 0, sz = 0;
+  for (const o of BOTS) {
+    if (o === b || !o.alive) continue;
+    const ddx = b.pos.x - o.pos.x, ddz = b.pos.z - o.pos.z;
+    const d2 = ddx * ddx + ddz * ddz;
+    if (d2 < 1.44 && d2 > 1e-6) {
+      const d = Math.sqrt(d2);
+      sx += (ddx / d) * (1.2 - d); sz += (ddz / d) * (1.2 - d);
+    }
+  }
+  const push = b.speed > 0 ? 2.0 : 3.2;
+  vx += sx * push * dt; vz += sz * push * dt;
   // объезд препятствий
   const r = 0.45;
   let nx = b.pos.x + vx, nz = b.pos.z + vz;
@@ -1129,6 +1271,59 @@ function moveBot(b, dt) {
   b.pos.x = nx; b.pos.z = nz;
   b.pos.y = terrainH(b.pos.x, b.pos.z);
 }
+/* процедурная поза поверх T-позы: ходьба / прицел / простой */
+function poseBot(b, dt) {
+  const bones = b.mesh.bones;
+  if (!bones || !b.mesh.rest) return;
+  const rest = b.mesh.rest, ax = b.mesh.ax;
+  const moving = b.speed > 0.3;
+  const inCombat = b.state === 'combat' && b.enemy;
+  b.animT += dt * (moving ? clamp(b.speed, 2.5, 6) * 1.9 : 1.5);
+  const t = b.animT;
+  const q = new THREE.Quaternion();
+  const set = (k, ang) => {
+    const bn = bones[k];
+    if (!bn || !rest.has(k)) return;
+    bn.quaternion.copy(rest.get(k).q).multiply(q.setFromAxisAngle(ax[k], ang));
+  };
+  const set2 = (k, zAng, xAng) => {
+    const bn = bones[k];
+    if (!bn || !rest.has(k)) return;
+    bn.quaternion.copy(rest.get(k).q)
+      .multiply(q.setFromAxisAngle(ax[k], zAng)).multiply(new THREE.Quaternion().setFromAxisAngle(ax[k + 'X'], xAng));
+  };
+  const w = moving ? Math.sin(t) : 0;
+  const hip = bones.hips;
+  if (hip && rest.has('hips')) {
+    hip.position.copy(rest.get('hips').p);
+    hip.position.y += (moving ? Math.abs(Math.cos(t)) * 0.05 : Math.sin(t * 1.3) * 0.008) * (b.mesh.units || 1); // боб в units кости
+  }
+  if (inCombat) {
+    // оружие к плечу: обе руки вперёд, лёгкое покачивание
+    set2('armR', -1.30 + w * 0.04, -0.30); set('forearmR', 0.50);
+    set2('armL', -1.00 + w * 0.04, 0.25); set('forearmL', 0.85);
+    set('spine', 0.07); set('head', -0.05);
+    set('uplegL', 0.05 + w * 0.35); set('uplegR', 0.05 - w * 0.35);
+    set('legL', -Math.max(0, w) * 0.5); set('legR', -Math.max(0, -w) * 0.5);
+    set('chest', 0.04);
+  } else if (moving) {
+    // ходьба: ноги машут, руки опущены и в противофазе
+    set('uplegL', 0.52 * w); set('uplegR', -0.52 * w);
+    set('legL', -Math.max(0, w) * 0.75); set('legR', -Math.max(0, -w) * 0.75);
+    set2('armL', -0.40 * w, 1.15); set2('armR', 0.40 * w, -1.15);
+    set('forearmL', 0.35); set('forearmR', 0.35);
+    set('spine', 0.09); set('head', -0.04);
+    set('chest', 0.02 * Math.sin(t * 2));
+  } else {
+    // простой: руки опущены вдоль тела, дыхание
+    const br = Math.sin(t * 1.3);
+    set2('armL', -0.12 + br * 0.02, 1.22); set2('armR', -0.12 - br * 0.02, -1.22);
+    set('forearmL', 0.28); set('forearmR', 0.28);
+    set('spine', 0.02 + br * 0.015); set('head', br * 0.02);
+    set('uplegL', 0.02); set('uplegR', -0.02);
+    set('legL', -0.01); set('legR', -0.01);
+  }
+}
 function updateBots(dt) {
   for (const b of BOTS) {
     if (!b.alive) {
@@ -1141,7 +1336,11 @@ function updateBots(dt) {
     moveBot(b, dt);
     b.mesh.wrap.position.set(b.pos.x, b.pos.y, b.pos.z);
     b.mesh.wrap.rotation.y = b.yaw - Math.PI / 2; // модель смотрит вдоль +X (по калибровке)
-    b.mesh.mixer.update(dt);
+    poseBot(b, dt);
+    if (b.mesh.gun && b.mesh.gun.flashT > 0) {
+      b.mesh.gun.flashT -= dt;
+      if (b.mesh.gun.flashT <= 0) b.mesh.gun.flash.visible = false;
+    }
   }
 }
 
@@ -1648,6 +1847,19 @@ window.BC = {
     },
     endRound(w) { endRound(w); },
     timeScale(t) { G.timeScale = t; },
+    rebuildVm(key, flip, roll) {
+      const def = WPN[key];
+      const src = GLB[key].scene;
+      if (src.parent) src.parent.remove(src);
+      src.scale.set(1, 1, 1); src.position.set(0, 0, 0); src.rotation.set(0, 0, 0);
+      const holder = VM[key].holder;
+      const old = holder.children[0];
+      holder.remove(old);
+      const wrap = normalizeWeapon(src, def.len, flip, roll);
+      holder.add(wrap);
+      if (VM[key].flash) { holder.remove(VM[key].flash); holder.add(VM[key].flash); }
+      return holder.children.length;
+    },
     resetPoints() { for (const p of POINTS) { p.owner = null; p.prog = 0; p.contested = false; refreshFlag(p); } },
     state() {
       return {
