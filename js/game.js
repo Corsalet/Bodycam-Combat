@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 2;
-const BC_VERSION = '0.1.1';
+const BC_BUILD = 3;
+const BC_VERSION = '0.1.2';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -579,10 +579,10 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
 /* ================= ОРУЖИЕ ================= */
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
-  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.28, -0.74], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.02, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.28, -0.78], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.02, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.26, -0.30, -0.86], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.04, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.27, -0.32, -0.92], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.05, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.32, -0.62], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.10, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.30, -0.22, -0.52], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.10, hipYaw: -0.35, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.34, -0.26, -0.52], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.14, hipYaw: -0.55, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.32, -0.28, -0.56], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.12, hipYaw: -0.50, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
   makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.23, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
   deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.235, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
@@ -764,7 +764,7 @@ function makeSoldier(team, wkey) {
     const gh = new THREE.Group();
     gh.add(gw);
     gh.rotation.y = -Math.PI / 2;            // дуло (-Z) вперёд по +X солдата
-    gh.position.set(0.45, 1.02, -0.14);      // перед правым бедром, вне тела
+    gh.position.set(0.40, 1.06, -0.16);      // перед грудью, вынесен вперёд
     const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.spark, color: 0xffd27a, transparent: true, depthTest: false, blending: THREE.AdditiveBlending }));
     fl.scale.setScalar(def.len * 0.16);
     fl.position.set(0, def.len * 0.03, -def.len * 0.48);
@@ -1310,15 +1310,15 @@ function poseBot(b, dt) {
     // ходьба: ноги машут, руки опущены и в противофазе
     set('uplegL', 0.52 * w); set('uplegR', -0.52 * w);
     set('legL', -Math.max(0, w) * 0.75); set('legR', -Math.max(0, -w) * 0.75);
-    set2('armL', -0.40 * w, 1.15); set2('armR', 0.40 * w, -1.15);
-    set('forearmL', 0.35); set('forearmR', 0.35);
+    set2('armL', -0.28 - 0.18 * w, 0.80); set2('armR', -0.28 + 0.18 * w, -0.80);
+    set('forearmL', 0.55); set('forearmR', 0.55);
     set('spine', 0.09); set('head', -0.04);
     set('chest', 0.02 * Math.sin(t * 2));
   } else {
     // простой: руки опущены вдоль тела, дыхание
     const br = Math.sin(t * 1.3);
-    set2('armL', -0.12 + br * 0.02, 1.22); set2('armR', -0.12 - br * 0.02, -1.22);
-    set('forearmL', 0.28); set('forearmR', 0.28);
+    set2('armL', -0.30 + br * 0.03, 0.78); set2('armR', -0.30 - br * 0.03, -0.78);
+    set('forearmL', 0.62); set('forearmR', 0.62);
     set('spine', 0.02 + br * 0.015); set('head', br * 0.02);
     set('uplegL', 0.02); set('uplegR', -0.02);
     set('legL', -0.01); set('legR', -0.01);
@@ -1335,7 +1335,7 @@ function updateBots(dt) {
     if (b.state === 'combat') botShoot(b, dt);
     moveBot(b, dt);
     b.mesh.wrap.position.set(b.pos.x, b.pos.y, b.pos.z);
-    b.mesh.wrap.rotation.y = b.yaw - Math.PI / 2; // модель смотрит вдоль +X (по калибровке)
+    b.mesh.wrap.rotation.y = b.yaw; // модель смотрит вдоль +Z (носок стопы указывает +Z)
     poseBot(b, dt);
     if (b.mesh.gun && b.mesh.gun.flashT > 0) {
       b.mesh.gun.flashT -= dt;
@@ -1568,7 +1568,7 @@ function updateVM(dt) {
     lerp(hp[1], ap[1], e) + by + sy + vmKickZ * 0.25,
     lerp(hp[2], ap[2], e) + vmKickZ
   );
-  vm.holder.rotation.set(vmKickZ * 1.6 + sy * 1.2 + (w.def.vmPitch || 0), sx * 1.6, vmKickRoll * 1.4);
+  vm.holder.rotation.set(vmKickZ * 1.6 + sy * 1.2 + (w.def.vmPitch || 0), sx * 1.6 + (w.def.hipYaw || 0), vmKickRoll * 1.4);
   vmKickZ = lerp(vmKickZ, 0, clamp(dt * 11, 0, 1));
   vmKickRoll = lerp(vmKickRoll, 0, clamp(dt * 9, 0, 1));
   lookVelX = lerp(lookVelX, 0, clamp(dt * 8, 0, 1));
@@ -1795,7 +1795,7 @@ function boot() {
 
 /* ================= ОТЛАДКИ / ЭКСПОРТ ================= */
 window.BC = {
-  G, P, BOTS, POINTS, tickets, GLB, NET, SET, WPN, VM, camera, scene,
+  G, P, BOTS, POINTS, tickets, GLB, NET, SET, WPN, VM, camera, scene, vmScene, vmCam,
   debug: {
     start(side, cls) { setupLoadout(side || 'RU', cls || 'assault'); startGame(true); },
     fire() { firePlayer(); },
