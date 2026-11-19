@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 3;
-const BC_VERSION = '0.1.2';
+const BC_BUILD = 4;
+const BC_VERSION = '0.1.3';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -105,6 +105,7 @@ const AUDIO = {
   dry() { this._tone(900, 0.04, 0.1, 'square', 700); },
   reload() { this._tone(500, 0.05, 0.1, 'square', 380); setTimeout(() => this._tone(700, 0.06, 0.12, 'square', 500), 160); setTimeout(() => this._tone(300, 0.05, 0.1, 'square', 220), 380); },
   switchW() { this._tone(650, 0.05, 0.09, 'square', 480); },
+  heal() { this._tone(420, 0.09, 0.12, 'sine', 320); setTimeout(() => this._tone(560, 0.1, 0.12, 'sine', 420), 220); },
   capTick(own) { this._tone(own ? 700 : 420, 0.05, 0.07, 'sine'); },
   capDone() { this._tone(520, 0.1, 0.14, 'sine'); setTimeout(() => this._tone(780, 0.14, 0.14, 'sine'), 110); },
   lost() { this._tone(400, 0.12, 0.12, 'sine', 260); setTimeout(() => this._tone(300, 0.16, 0.12, 'sine', 190), 130); },
@@ -579,10 +580,10 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
 /* ================= ОРУЖИЕ ================= */
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
-  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.32, -0.62], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.10, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.30, -0.22, -0.52], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.10, hipYaw: -0.35, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.34, -0.26, -0.52], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.14, hipYaw: -0.55, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.32, -0.28, -0.56], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.12, hipYaw: -0.50, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.25, -0.50], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.24, hipYaw: 0.28, vmScale: 0.72, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.25, -0.52], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.24, hipYaw: 0.26, vmScale: 0.76, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.28, -0.24, -0.55], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.22, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.30, -0.26, -0.60], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.16, hipYaw: 0.18, vmScale: 0.70, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
   makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.23, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
   deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.235, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
@@ -601,6 +602,7 @@ function buildViewmodels() {
     if (!g) continue;
     const src = g.scene; // не клонируем: каждый ствол используется 1 раз
     const wrap = normalizeWeapon(src, def.len, def.flip, def.rollFix);
+    if (def.vmScale) wrap.scale.multiplyScalar(def.vmScale); // длинные стволы уменьшаем, чтобы приклад был виден
     const holder = new THREE.Group();
     holder.add(wrap);
     holder.visible = false;
@@ -608,7 +610,7 @@ function buildViewmodels() {
     // вспышка
     const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.spark, color: 0xffd27a, transparent: true, depthTest: false, blending: THREE.AdditiveBlending }));
     flash.scale.setScalar(def.len * 0.16);
-    flash.position.set(0, def.len * 0.03, -def.len * 0.48);
+    flash.position.set(0, def.len * 0.03, -def.len * 0.48 * (def.vmScale || 1));
     flash.visible = false;
     holder.add(flash);
     VM[key].flash = flash;
@@ -761,6 +763,7 @@ function makeSoldier(team, wkey) {
   if (wkey && VM[wkey]) {
     const def = WPN[wkey];
     const gw = VM[wkey].holder.children[0].clone(true);
+      if (WPN[wkey].vmScale) gw.scale.multiplyScalar(1 / WPN[wkey].vmScale); // ботам — полноразмерный ствол
     const gh = new THREE.Group();
     gh.add(gw);
     gh.rotation.y = -Math.PI / 2;            // дуло (-Z) вперёд по +X солдата
@@ -783,7 +786,7 @@ const P = {
   yaw: 0, pitch: 0, hp: 100, alive: true, deaths: 0, kills: 0, caps: 0,
   weapons: [], wIdx: 0, fireHeld: false, lastFire: 0, reloadT: 0, ads: false, adsT: 0,
   sprint: false, onGround: true, lastHurt: -99, respawnT: 0, killsBots: 0,
-  stance: 0, // для качания: время шага
+  stance: 0, bandages: 5, bandageT: 0, bandLow: 0, // бинты: слот «3»
 };
 const EYE = 1.62;
 const BASES = { RU: { x: -172, z: 152 }, US: { x: 172, z: -152 } };
@@ -803,6 +806,7 @@ function playerSpawn() {
   P.pos.y = terrainH(P.pos.x, P.pos.z) + EYE;
   P.yaw = Math.atan2(-(POINTS[1].x - P.pos.x), -(POINTS[1].z - P.pos.z)); // взгляд на центр (B)
   P.pitch = 0; P.hp = 100; P.alive = true; P.ads = false; P.reloadT = 0;
+  P.bandages = 5; P.bandageT = 0;
   P.vel.set(0, 0, 0);
   // полные магазины
   for (const w of P.weapons) { w.mag = w.def.mag; w.res = w.def.reserve; }
@@ -835,14 +839,14 @@ function updateAmmoHUD() {
   $('ammo-res').textContent = '/ ' + w.res;
 }
 function switchWeapon(idx) {
-  if (!P.alive || idx === P.wIdx || !P.weapons[idx] || P.reloadT > 0) return;
+  if (!P.alive || idx === P.wIdx || !P.weapons[idx] || P.reloadT > 0 || P.bandageT > 0) return;
   P.wIdx = idx;
   setADS(false);
   equipWeapon();
 }
 function startReload() {
   const w = P.weapons[P.wIdx];
-  if (!P.alive || P.reloadT > 0 || w.mag >= w.def.mag || w.res <= 0) return;
+  if (!P.alive || P.reloadT > 0 || P.bandageT > 0 || w.mag >= w.def.mag || w.res <= 0) return;
   P.reloadT = w.def.reload;
   AUDIO.reload();
 }
@@ -853,8 +857,17 @@ function finishReload() {
   updateAmmoHUD();
 }
 
+function startBandage() {
+  if (!P.alive || P.bandageT > 0 || P.bandages <= 0 || P.hp >= 100 || P.reloadT > 0) return;
+  P.bandageT = 2.6;
+  setADS(false);
+  AUDIO.reload();
+  updateBandHUD();
+}
+
 /* --- прицеливание --- */
 function setADS(on) {
+  if (on && P.bandageT > 0) return;
   const w = P.weapons[P.wIdx];
   const hasScope = w.def.scope;
   P.ads = on;
@@ -888,7 +901,7 @@ function currentSpread() {
 function firePlayer() {
   if (!P.alive || G.state !== 'play') return;
   const w = P.weapons[P.wIdx];
-  if (P.reloadT > 0) return;
+  if (P.reloadT > 0 || P.bandageT > 0) return;
   if (performance.now() - P.lastFire < 60000 / w.def.rpm) return;
   if (w.mag <= 0) { AUDIO.dry(); P.lastFire = performance.now(); return; }
   w.mag--; P.lastFire = performance.now();
@@ -964,7 +977,7 @@ function damagePlayer(dmg, killerName, weaponName) {
   dv.style.opacity = String(clamp(0.35 + (1 - P.hp / 100) * 0.55, 0, 0.95));
   setTimeout(() => { dv.style.opacity = String(clamp((1 - P.hp / 100) * 0.35, 0, 0.4)); }, 240);
   if (P.hp <= 0) {
-    P.hp = 0; P.alive = false; P.deaths++;
+    P.hp = 0; P.alive = false; P.deaths++; P.bandageT = 0;
     tickets[P.team] = Math.max(0, tickets[P.team] - 1);
     AUDIO.death();
     P.respawnT = 6;
@@ -981,6 +994,14 @@ function updateHPHUD() {
   f.style.width = hp + '%';
   f.classList.toggle('low', hp < 30);
   f.classList.toggle('mid', hp >= 30 && hp < 60);
+}
+function updateBandHUD() {
+  $('band-num').textContent = '×' + P.bandages;
+  const bar = $('band-bar');
+  if (P.bandageT > 0) {
+    bar.style.display = 'block';
+    $('band-fill').style.width = Math.round((1 - P.bandageT / 2.6) * 100) + '%';
+  } else bar.style.display = 'none';
 }
 function playerRespawn() {
   playerSpawn();
@@ -1028,10 +1049,17 @@ function movePlayer(dt) {
   if (P.pos.y <= gy) { P.pos.y = gy; P.vel.y = 0; P.onGround = true; }
   // шаг-время для бобa
   if (moving && P.onGround) P.stance += dt * (P.sprint ? 11.5 : 7.5);
-  // реген HP
-  if (P.hp < 100 && performance.now() - P.lastHurt > 5000) {
-    P.hp = Math.min(100, P.hp + 7 * dt);
-    updateHPHUD();
+  // перебинтовка: пассивного регена нет, лечение только бинтами (слот «3»)
+  if (P.bandageT > 0) {
+    P.bandageT -= dt;
+    if (P.bandageT <= 0) {
+      P.bandageT = 0;
+      P.bandages--;
+      P.hp = Math.min(100, P.hp + 55);
+      AUDIO.heal();
+      updateHPHUD();
+    }
+    updateBandHUD();
   }
   // перезарядка
   if (P.reloadT > 0) {
@@ -1204,6 +1232,20 @@ function botShoot(b, dt) {
 function moveBot(b, dt) {
   if (!b.alive) return;
   b.speed = 0;
+  // выталкивание, если бот каким-то образом оказался вплотную/внутри коллайдера
+  const rPush = 0.45;
+  for (const c of COLLIDERS) {
+    if (b.pos.x + rPush > c.x1 && b.pos.x - rPush < c.x2 && b.pos.z + rPush > c.z1 && b.pos.z - rPush < c.z2) {
+      const dxl = b.pos.x - c.x1, dxr = c.x2 - b.pos.x, dzt = b.pos.z - c.z1, dzb = c.z2 - b.pos.z;
+      const mn = Math.min(dxl, dxr, dzt, dzb);
+      if (mn === dxl) b.pos.x = c.x1 - rPush - 0.05;
+      else if (mn === dxr) b.pos.x = c.x2 + rPush + 0.05;
+      else if (mn === dzt) b.pos.z = c.z1 - rPush - 0.05;
+      else b.pos.z = c.z2 + rPush + 0.05;
+      b._stuck = 0;
+      break;
+    }
+  }
   let vx = 0, vz = 0;
   if (b.state === 'combat' && b.enemy) {
     // лицом к врагу, лёгкий стрейф
@@ -1252,19 +1294,49 @@ function moveBot(b, dt) {
   }
   const push = b.speed > 0 ? 2.0 : 3.2;
   vx += sx * push * dt; vz += sz * push * dt;
-  // объезд препятствий
+  // объезд препятствий: усы-пробы, детект застревания, манёвр в обход, скольжение вдоль стен
   const r = 0.45;
+  const heading = Math.atan2(vx, vz);
+  const probe = a => pointBlocked(b.pos.x + Math.sin(a) * 1.35, b.pos.z + Math.cos(a) * 1.35, r);
+  b.avoidT = Math.max(0, (b.avoidT || 0) - dt);
+  // застревание: хотел идти, но почти не сместился за кадр
+  const moved = Math.hypot(b.pos.x - (b._sx ?? b.pos.x), b.pos.z - (b._sz ?? b.pos.z));
+  if (b.speed > 1) b._stuck = Math.max(0, (b._stuck || 0) + (moved < b.speed * dt * 0.3 ? dt : -dt * 2)); else b._stuck = 0;
+  b._sx = b.pos.x; b._sz = b.pos.z;
+  const goalAng = b.goal ? Math.atan2(b.goal.x - b.pos.x, b.goal.z - b.pos.z) : heading;
+  if ((b._stuck > 0.4 || probe(heading)) && b.avoidT <= 0 && b.speed > 0.5) {
+    // выбираем свободную сторону; направление манёвра держим до выхода из обхода
+    b.avoidDir = probe(goalAng + 0.7) ? -1 : (probe(goalAng - 0.7) ? 1 : (b.avoidDir || (Math.random() < 0.5 ? 1 : -1)));
+    b.avoidT = 0.9 + Math.random() * 0.6;
+    b._stuck = 0;
+  }
+  if (b.avoidT > 0) {
+    // манёвр: уводим курс в сторону от препятствия, тело поворачивается честно
+    if (!probe(goalAng)) b.avoidT = Math.min(b.avoidT, 0.12); // путь впереди свободен — быстро выходим из обхода
+    const want = goalAng + (b.avoidDir || 1) * 1.15;
+    let dy = want - b.yaw;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    b.yaw += clamp(dy, -4.5 * dt, 4.5 * dt);
+    const aspd = 3.6;
+    vx = Math.sin(b.yaw) * aspd * dt; vz = Math.cos(b.yaw) * aspd * dt;
+    b.speed = aspd;
+  }
   let nx = b.pos.x + vx, nz = b.pos.z + vz;
   if (pointBlocked(nx, nz, r)) {
-    // пробуем повороты
-    const back = Math.atan2(vx, vz);
-    let ok = false;
-    for (const off of [0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
-      const a = back + off;
-      const tx = b.pos.x + Math.sin(a) * Math.hypot(vx, vz), tz = b.pos.z + Math.cos(a) * Math.hypot(vx, vz);
-      if (!pointBlocked(tx, tz, r)) { nx = tx; nz = tz; ok = true; break; }
+    // скольжение вдоль стены: сначала пробуем движение по одной оси
+    if (!pointBlocked(nx, b.pos.z, r)) nz = b.pos.z;
+    else if (!pointBlocked(b.pos.x, nz, r)) nx = b.pos.x;
+    else {
+      const back = Math.atan2(vx, vz);
+      let ok = false;
+      for (const off of [0.7, -0.7, 1.4, -1.4]) {
+        const a = back + off;
+        const tx = b.pos.x + Math.sin(a) * Math.hypot(vx, vz), tz = b.pos.z + Math.cos(a) * Math.hypot(vx, vz);
+        if (!pointBlocked(tx, tz, r)) { nx = tx; nz = tz; ok = true; break; }
+      }
+      if (!ok) { nx = b.pos.x; nz = b.pos.z; }
     }
-    if (!ok) { nx = b.pos.x; nz = b.pos.z; }
   }
   nx = clamp(nx, -MAP.half + 2, MAP.half - 2);
   nz = clamp(nz, -MAP.half + 2, MAP.half - 2);
@@ -1563,12 +1635,18 @@ function updateVM(dt) {
   const by = Math.abs(Math.cos(P.stance)) * 0.011 * moving * bobA;
   const sx = clamp(lookVelX, -0.05, 0.05) * 0.6, sy = clamp(lookVelY, -0.05, 0.05) * 0.6;
   const hp = vm.def.hipPos, ap = vm.def.adsPos;
+  // перебинтовка: оружие опущено в сторону, стволом вниз
+  P.bandLow = lerp(P.bandLow || 0, P.bandageT > 0 ? 1 : 0, clamp(dt * 6, 0, 1));
   vm.holder.position.set(
-    lerp(hp[0], ap[0], e) + bx + sx,
-    lerp(hp[1], ap[1], e) + by + sy + vmKickZ * 0.25,
-    lerp(hp[2], ap[2], e) + vmKickZ
+    lerp(hp[0], ap[0], e) + bx + sx + P.bandLow * 0.16,
+    lerp(hp[1], ap[1], e) + by + sy + vmKickZ * 0.25 - P.bandLow * 0.34,
+    lerp(hp[2], ap[2], e) + vmKickZ + P.bandLow * 0.06
   );
-  vm.holder.rotation.set(vmKickZ * 1.6 + sy * 1.2 + (w.def.vmPitch || 0), sx * 1.6 + (w.def.hipYaw || 0), vmKickRoll * 1.4);
+  vm.holder.rotation.set(
+    vmKickZ * 1.6 + sy * 1.2 + (w.def.vmPitch || 0) * (1 - e) - P.bandLow * 0.35,
+    sx * 1.6 + (w.def.hipYaw || 0) * (1 - e) + P.bandLow * 0.55,
+    vmKickRoll * 1.4 + P.bandLow * 0.4
+  );
   vmKickZ = lerp(vmKickZ, 0, clamp(dt * 11, 0, 1));
   vmKickRoll = lerp(vmKickRoll, 0, clamp(dt * 9, 0, 1));
   lookVelX = lerp(lookVelX, 0, clamp(dt * 8, 0, 1));
@@ -1592,7 +1670,7 @@ function resetRound() {
   batt = 86;
   spawnBots();
   playerSpawn();
-  updateHPHUD(); updateAmmoHUD(); updateHUDText();
+  updateHPHUD(); updateBandHUD(); updateAmmoHUD(); updateHUDText();
 }
 function startGame(fromDebug) {
   AUDIO.init(); AUDIO.resume();
@@ -1651,6 +1729,7 @@ document.addEventListener('keydown', e => {
     if (e.code === 'KeyR') startReload();
     if (e.code === 'Digit1') switchWeapon(0);
     if (e.code === 'Digit2') switchWeapon(1);
+    if (e.code === 'Digit3') startBandage();
   }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
