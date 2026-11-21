@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 7;
-const BC_VERSION = '0.1.6';
+const BC_BUILD = 8;
+const BC_VERSION = '0.1.7';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -499,7 +499,28 @@ function worldVerts(root) {
   });
   return out;
 }
+function brightenMaterials(src) {
+  // у большинства исходных GLB нет текстур, а baseColor-факторы задраны в 2-8% яркости —
+  // поднимаем яркость до видимой, сохраняя относительные оттенки (дерево/металл/оптика)
+  src.traverse(o => {
+    if (!o.isMesh || !o.material) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (m.map) continue; // текстурные не трогаем
+      const c = m.color;
+      const mx = Math.max(c.r, c.g, c.b);
+      if (mx > 0.85) { c.setRGB(0.16, 0.17, 0.19); continue; } // некрашеный белый -> сталь
+      if (mx <= 0.001) continue;
+      const f = Math.min(0.32 / mx, 6);
+      if (f > 1.05) c.multiplyScalar(f);
+      if (m.metalness !== undefined) m.metalness = Math.min(m.metalness, 0.4);
+      if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, 0.35);
+    }
+  });
+}
+
 function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
+  brightenMaterials(sceneIn);
   sceneIn.updateMatrixWorld(true);
   // отсекаем «оторванные» детали (патроны рядом с моделью): кластеры касаний,
   // удаляем всё, что не связано с основным телом оружия
