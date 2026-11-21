@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 5;
-const BC_VERSION = '0.1.4';
+const BC_BUILD = 6;
+const BC_VERSION = '0.1.5';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -580,10 +580,10 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
 /* ================= ОРУЖИЕ ================= */
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
-  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.22, -0.50], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.24, hipYaw: 0.28, vmScale: 0.95, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.21, -0.47], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.21, hipYaw: 0.24, vmScale: 0.95, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.28, -0.22, -0.52], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.22, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.29, -0.24, -0.55], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.18, hipYaw: 0.22, vmScale: 0.85, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.28, -0.15, -0.48], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.20, hipYaw: 0.28, vmScale: 0.95, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.28, -0.15, -0.48], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.00, hipYaw: 0.28, vmScale: 0.95, flip: true, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.30, -0.22, -0.50], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.20, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.30, -0.10, -0.55], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: -0.05, hipYaw: 0.24, vmScale: 0.85, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
   makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.19, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
   deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.19, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
@@ -1368,6 +1368,26 @@ function moveBot(b, dt) {
       }
       if (!ok) { nx = b.pos.x; nz = b.pos.z; }
     }
+  }
+  // полный пин (карман между коллайдерами): перебор направлений по кругу до свободного
+  const mvx = nx - b.pos.x, mvz = nz - b.pos.z;
+  if (b.speed > 1 && Math.hypot(mvx, mvz) < Math.max(0.008, spd * dt * 0.12)) b._pinT = (b._pinT || 0) + dt;
+  else b._pinT = 0;
+  if (b._pinT > 0.6 && b.goal) {
+    const base = Math.atan2(gax - b.pos.x, gaz - b.pos.z);
+    for (let k = 0; k < 16; k++) {
+      const a = base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.4;
+      if (!pointBlocked(b.pos.x + Math.sin(a) * 0.8, b.pos.z + Math.cos(a) * 0.8, r) && !pointBlocked(b.pos.x + Math.sin(a) * 1.6, b.pos.z + Math.cos(a) * 1.6, r)) {
+        b.yaw = a;
+        nx = b.pos.x + Math.sin(a) * 3.4 * dt;
+        nz = b.pos.z + Math.cos(a) * 3.4 * dt;
+        b.speed = 3.4;
+        b.avoidDir = k % 2 ? 1 : -1;
+        b.avoidT = 1.2;
+        break;
+      }
+    }
+    b._pinT = 0;
   }
   nx = clamp(nx, -MAP.half + 2, MAP.half - 2);
   nz = clamp(nz, -MAP.half + 2, MAP.half - 2);
