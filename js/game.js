@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 6;
-const BC_VERSION = '0.1.5';
+const BC_BUILD = 7;
+const BC_VERSION = '0.1.6';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -581,9 +581,9 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
   ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.28, -0.15, -0.48], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.20, hipYaw: 0.28, vmScale: 0.95, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.28, -0.15, -0.48], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.00, hipYaw: 0.28, vmScale: 0.95, flip: true, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.30, -0.22, -0.50], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.20, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.30, -0.10, -0.55], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: -0.05, hipYaw: 0.24, vmScale: 0.85, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.14, -0.068, -0.55], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0, hipYaw: 0, vmScale: 1.35, flip: true, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.133, -0.088, -0.85], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0, hipYaw: 0, vmScale: 1.1, flip: true, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.136, -0.089, -0.90], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0, hipYaw: 0, vmScale: 1.0, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
   makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.19, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
   deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.19, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
@@ -603,6 +603,7 @@ function buildViewmodels() {
     const src = g.scene; // не клонируем: каждый ствол используется 1 раз
     const wrap = normalizeWeapon(src, def.len, def.flip, def.rollFix);
     if (def.vmScale) wrap.scale.multiplyScalar(def.vmScale); // длинные стволы уменьшаем, чтобы приклад был виден
+    wrap.rotation.x = def.aimTilt || 0; // наклон ствола к перекрестку, задается в модели
     wrap.traverse(o => { o.frustumCulled = false; }); // VM всегда рисуем: bbox моделей неточен, near-плоскость близко
     const holder = new THREE.Group();
     holder.add(wrap);
@@ -611,9 +612,9 @@ function buildViewmodels() {
     // вспышка
     const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.spark, color: 0xffd27a, transparent: true, depthTest: false, blending: THREE.AdditiveBlending }));
     flash.scale.setScalar(def.len * 0.16);
-    flash.position.set(0, def.len * 0.03, -def.len * 0.48 * (def.vmScale || 1));
+    flash.position.set(0, 0, -def.len * 0.5 * 0.985);
     flash.visible = false;
-    holder.add(flash);
+    wrap.add(flash);
     VM[key].flash = flash;
   }
 }
@@ -1645,7 +1646,7 @@ function grainStep() {
 }
 function updateBodycam(dt) {
   G.elapsed += dt;
-  $('bc-tc').textContent = 'TC ' + fmtMMSS(G.elapsed);
+  $('bc-tc').textContent = 'TC ' + fmtMMSS(G.elapsed) + ' • ' + BC_VERSION + ' B' + BC_BUILD;
   battT += dt;
   if (battT > 75 && batt > 15) { battT = 0; batt--; $('bc-battxt').textContent = 'BATT ' + batt + '%'; $('bc-batfill').style.width = batt + '%'; }
 }
