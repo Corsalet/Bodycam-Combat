@@ -5,8 +5,8 @@
    ================================================================ */
 'use strict';
 
-const BC_BUILD = 4;
-const BC_VERSION = '0.1.3';
+const BC_BUILD = 5;
+const BC_VERSION = '0.1.4';
 
 /* --- авторелоад кэша (как jb_build в Jurassic-Blocky) --- */
 (function () {
@@ -580,12 +580,12 @@ function normalizeWeapon(sceneIn, targetLen, forceFlip, rollFix) {
 /* ================= ОРУЖИЕ ================= */
 /* vmPos — позиция viewmodel в камере [x,y,z]; flip — разворот дула на 180° */
 const WPN = {
-  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.25, -0.50], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.24, hipYaw: 0.28, vmScale: 0.72, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
-  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.25, -0.52], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.24, hipYaw: 0.26, vmScale: 0.76, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
-  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.28, -0.24, -0.55], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.22, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
-  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.30, -0.26, -0.60], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.16, hipYaw: 0.18, vmScale: 0.70, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
-  makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.23, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
-  deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.235, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
+  ak74: { name: 'АК-74', file: 'assets/ak74.glb', len: 0.92, auto: true, rpm: 600, dmg: 26, mag: 30, reserve: 120, reload: 2.3, sHip: 1.5, sAds: 0.30, adsFov: 55, hipPos: [0.26, -0.22, -0.50], adsPos: [0, -0.176, -0.42], kick: 1.0, vmPitch: 0.24, hipYaw: 0.28, vmScale: 0.95, flip: false, tone: 'ak74', scope: null, mode: 'АВТО' },
+  m16: { name: 'М16А4', file: 'assets/m16.glb', len: 1.0, auto: true, rpm: 660, dmg: 25, mag: 30, reserve: 120, reload: 2.2, sHip: 1.4, sAds: 0.28, adsFov: 55, hipPos: [0.26, -0.21, -0.47], adsPos: [0, -0.178, -0.44], kick: 0.9, vmPitch: 0.21, hipYaw: 0.24, vmScale: 0.95, flip: false, tone: 'm16', scope: null, mode: 'АВТО' },
+  svd: { name: 'СВД ДРАГУНОВА', file: 'assets/svd.glb', len: 1.22, auto: false, rpm: 90, dmg: 90, mag: 10, reserve: 40, reload: 2.8, sHip: 1.9, sAds: 0.10, adsFov: 18, hipPos: [0.28, -0.22, -0.52], adsPos: [0, -0.16, -0.46], kick: 1.8, vmPitch: 0.22, hipYaw: 0.30, vmScale: 1.0, flip: false, tone: 'svd', scope: { fov: 18 }, mode: 'ОДИНОЧНЫЙ' },
+  m82: { name: 'M82A1 BARRETT', file: 'assets/m82.glb', len: 1.45, auto: false, rpm: 45, dmg: 135, mag: 10, reserve: 30, reload: 3.4, sHip: 2.3, sAds: 0.08, adsFov: 10, hipPos: [0.29, -0.24, -0.55], adsPos: [0, -0.155, -0.50], kick: 2.6, vmPitch: 0.18, hipYaw: 0.22, vmScale: 0.85, flip: false, tone: 'm82', scope: { fov: 10 }, mode: 'ОДИНОЧНЫЙ' },
+  makarov: { name: 'ПМ «МАКАРОВ»', file: 'assets/makarov.glb', len: 0.30, auto: false, rpm: 300, dmg: 24, mag: 8, reserve: 40, reload: 1.8, sHip: 1.2, sAds: 0.4, adsFov: 62, hipPos: [0.21, -0.19, -0.44], adsPos: [0, -0.16, -0.32], kick: 0.6, vmPitch: 0.01, flip: false, tone: 'makarov', scope: null, mode: 'ОДИНОЧНЫЙ' },
+  deagle: { name: 'DESERT EAGLE .50', file: 'assets/deagle.glb', len: 0.36, auto: false, rpm: 200, dmg: 48, mag: 7, reserve: 35, reload: 2.0, sHip: 1.5, sAds: 0.45, adsFov: 62, hipPos: [0.21, -0.19, -0.46], adsPos: [0, -0.165, -0.33], kick: 1.4, vmPitch: 0.01, flip: false, tone: 'deagle', scope: null, mode: 'ОДИНОЧНЫЙ' },
 };
 /* классы и стороны */
 const CLASSES = {
@@ -603,6 +603,7 @@ function buildViewmodels() {
     const src = g.scene; // не клонируем: каждый ствол используется 1 раз
     const wrap = normalizeWeapon(src, def.len, def.flip, def.rollFix);
     if (def.vmScale) wrap.scale.multiplyScalar(def.vmScale); // длинные стволы уменьшаем, чтобы приклад был виден
+    wrap.traverse(o => { o.frustumCulled = false; }); // VM всегда рисуем: bbox моделей неточен, near-плоскость близко
     const holder = new THREE.Group();
     holder.add(wrap);
     holder.visible = false;
@@ -1248,21 +1249,37 @@ function moveBot(b, dt) {
   }
   let vx = 0, vz = 0;
   if (b.state === 'combat' && b.enemy) {
-    // лицом к врагу, лёгкий стрейф
+    // лицом к врагу
     const e = b.enemy;
     const wantYaw = Math.atan2(e.pos.x - b.pos.x, e.pos.z - b.pos.z);
     let dy = wantYaw - b.yaw;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
     b.yaw += clamp(dy, -3.5 * dt, 3.5 * dt);
-    b.strafe += dt;
-    const sd = Math.sin(b.strafe * 1.7) * 1.6;
-    const rx = Math.cos(b.yaw), rz = -Math.sin(b.yaw);
-    vx = rx * sd * dt; vz = rz * sd * dt;
-    b.speed = Math.abs(sd);
+    // при низком HP — короткий ретрит спиной, продолжая смотреть на врага
+    if (b.hp < 35 && !(b.retreatT > 0)) b.retreatT = 1.4;
+    if (b.retreatT > 0) {
+      b.retreatT -= dt;
+      vx = -Math.sin(b.yaw) * 3.0 * dt; vz = -Math.cos(b.yaw) * 3.0 * dt;
+      b.speed = 3.0;
+    } else {
+      // лёгкий стрейф
+      b.strafe += dt;
+      const sd = Math.sin(b.strafe * 1.7) * 1.6;
+      const rx = Math.cos(b.yaw), rz = -Math.sin(b.yaw);
+      vx = rx * sd * dt; vz = rz * sd * dt;
+      b.speed = Math.abs(sd);
+    }
   } else if (b.goal) {
-    const hx = b.goal.x + Math.cos(b.holdA) * b.holdR;
-    const hz = b.goal.z + Math.sin(b.holdA) * b.holdR;
+    const hx0 = b.goal.x + Math.cos(b.holdA) * b.holdR;
+    const hz0 = b.goal.z + Math.sin(b.holdA) * b.holdR;
+    // заход с фланга: пока далеко от точки, идём со своим боковым смещением, у точки оно гаснет
+    const gdh = Math.hypot(hx0 - b.pos.x, hz0 - b.pos.z);
+    if (b.flank === undefined) b.flank = rand(-14, 14);
+    const fw = clamp((gdh - 12) / 18, 0, 1);
+    const px = -(hz0 - b.pos.z) / (gdh || 1), pz = (hx0 - b.pos.x) / (gdh || 1);
+    const hx = hx0 + px * b.flank * fw;
+    const hz = hz0 + pz * b.flank * fw;
     const dx = hx - b.pos.x, dz = hz - b.pos.z;
     const dh = Math.hypot(dx, dz);
     if (dh > 1.8) {
@@ -1294,37 +1311,51 @@ function moveBot(b, dt) {
   }
   const push = b.speed > 0 ? 2.0 : 3.2;
   vx += sx * push * dt; vz += sz * push * dt;
-  // объезд препятствий: усы-пробы, детект застревания, манёвр в обход, скольжение вдоль стен
+  // === НАВИГАЦИЯ: уайзеры, следование вдоль стены до очистки цели, анти-застревание ===
   const r = 0.45;
   const heading = Math.atan2(vx, vz);
-  const probe = a => pointBlocked(b.pos.x + Math.sin(a) * 1.35, b.pos.z + Math.cos(a) * 1.35, r);
+  const spd = Math.hypot(vx, vz);
+  const probeAt = (a, dist) => pointBlocked(b.pos.x + Math.sin(a) * dist, b.pos.z + Math.cos(a) * dist, r);
+  const gax = b.goal ? b.goal.x + Math.cos(b.holdA) * b.holdR : b.pos.x + Math.sin(b.yaw);
+  const gaz = b.goal ? b.goal.z + Math.sin(b.holdA) * b.holdR : b.pos.z + Math.cos(b.yaw);
+  const goalAng = b.goal ? Math.atan2(gax - b.pos.x, gaz - b.pos.z) : heading;
   b.avoidT = Math.max(0, (b.avoidT || 0) - dt);
-  // застревание: хотел идти, но почти не сместился за кадр
+  // застревание: хотел идти, но почти не сместился
   const moved = Math.hypot(b.pos.x - (b._sx ?? b.pos.x), b.pos.z - (b._sz ?? b.pos.z));
-  if (b.speed > 1) b._stuck = Math.max(0, (b._stuck || 0) + (moved < b.speed * dt * 0.3 ? dt : -dt * 2)); else b._stuck = 0;
+  if (spd > 0.8) b._stuck = Math.max(0, (b._stuck || 0) + (moved < spd * dt * 0.35 ? dt : -dt * 2));
+  else b._stuck = Math.max(0, (b._stuck || 0) - dt);
   b._sx = b.pos.x; b._sz = b.pos.z;
-  const goalAng = b.goal ? Math.atan2(b.goal.x - b.pos.x, b.goal.z - b.pos.z) : heading;
-  if ((b._stuck > 0.4 || probe(heading)) && b.avoidT <= 0 && b.speed > 0.5) {
-    // выбираем свободную сторону; направление манёвра держим до выхода из обхода
-    b.avoidDir = probe(goalAng + 0.7) ? -1 : (probe(goalAng - 0.7) ? 1 : (b.avoidDir || (Math.random() < 0.5 ? 1 : -1)));
-    b.avoidT = 0.9 + Math.random() * 0.6;
+  if (b._stuck > 0.55 && b.avoidT <= 0 && spd > 0.5) {
+    // текущая сторона не помогает — разворачиваем обход в другую
+    b.avoidDir = -(b.avoidDir || (Math.random() < 0.5 ? 1 : -1));
+    b.avoidT = 1.6;
     b._stuck = 0;
   }
-  if (b.avoidT > 0) {
-    // манёвр: уводим курс в сторону от препятствия, тело поворачивается честно
-    if (!probe(goalAng)) b.avoidT = Math.min(b.avoidT, 0.12); // путь впереди свободен — быстро выходим из обхода
-    const want = goalAng + (b.avoidDir || 1) * 1.15;
-    let dy = want - b.yaw;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
-    b.yaw += clamp(dy, -4.5 * dt, 4.5 * dt);
-    const aspd = 3.6;
-    vx = Math.sin(b.yaw) * aspd * dt; vz = Math.cos(b.yaw) * aspd * dt;
-    b.speed = aspd;
+  const fwdBlocked = spd > 0.3 && probeAt(heading, 1.5);
+  if (fwdBlocked && b.avoidT <= 0) {
+    // сторона обхода — по свободному уайзеру (±40°)
+    const L = probeAt(heading - 0.7, 1.5), R = probeAt(heading + 0.7, 1.5);
+    b.avoidDir = !R ? 1 : (!L ? -1 : (b.avoidDir || (Math.random() < 0.5 ? 1 : -1)));
+    b.avoidT = 2.5;
+  }
+  if (b.avoidT > 0 && spd > 0.3) {
+    // выход из обхода, когда путь к цели освободился
+    if (!probeAt(goalAng, 2.4) && !probeAt(goalAng + (b.avoidDir || 1) * 0.45, 1.5)) b.avoidT = 0;
+    else {
+      // следуем вдоль стены: курс отклонён в сторону обхода, тело поворачивается честно
+      const want = goalAng + (b.avoidDir || 1) * 1.0;
+      let dy = want - b.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      b.yaw += clamp(dy, -5 * dt, 5 * dt);
+      const aspd = clamp(spd, 2.6, 4.0);
+      vx = Math.sin(b.yaw) * aspd * dt; vz = Math.cos(b.yaw) * aspd * dt;
+      b.speed = aspd;
+    }
   }
   let nx = b.pos.x + vx, nz = b.pos.z + vz;
   if (pointBlocked(nx, nz, r)) {
-    // скольжение вдоль стены: сначала пробуем движение по одной оси
+    // скольжение вдоль стены по одной оси, затем повороты
     if (!pointBlocked(nx, b.pos.z, r)) nz = b.pos.z;
     else if (!pointBlocked(b.pos.x, nz, r)) nx = b.pos.x;
     else {
@@ -1880,7 +1911,7 @@ window.BC = {
     fire() { firePlayer(); },
     reload() { startReload(); },
     teleport(x, z) { P.pos.x = x; P.pos.z = z; P.pos.y = terrainH(x, z) + EYE; },
-    setLook(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; },
+    setLook(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; lookVelX = 0; lookVelY = 0; },
     aimNearestEnemy() {
       let best = null, bd = 1e9;
       const o = camera.position.clone();
