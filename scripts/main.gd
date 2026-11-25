@@ -1,7 +1,7 @@
 extends Node3D
 
 
-const VER: = "0.4.3 G2"
+const VER: = "0.4.4 G2"
 
 var state: = "menu"
 var mouse_sens: = 1.0
@@ -325,10 +325,24 @@ func ground_y(x: float, z: float) -> float:
 	return hit["position"].y if not hit.is_empty() else World.terrain_h(x, z)
 
 func raycast_hit(from: Vector3, dir: Vector3, max_dist: float, exclude: Node3D) -> Dictionary:
-	var q: = PhysicsRayQueryParameters3D.create(from, from + dir * max_dist, 1 | 4)
+	var excl: Array[RID] = []
 	if exclude:
-		q.exclude = [exclude.get_rid()]
-	return space_state.intersect_ray(q)
+		excl.append(exclude.get_rid())
+	var shooter_team: String = str(exclude.get("team")) if exclude else ""
+	for i in 5:
+		var q: = PhysicsRayQueryParameters3D.create(from, from + dir * max_dist, 1 | 4)
+		q.exclude = excl
+		var h: = space_state.intersect_ray(q)
+		if h.is_empty():
+			return h
+		var col: Object = h["collider"]
+		if col is BotBody:
+			var b: = col as BotBody
+			if not b.alive or (shooter_team != "" and b.team == shooter_team):
+				excl.append(b.get_rid())
+				continue
+		return h
+	return {}
 
 func hurt_player(dmg: float, killer_name: String, weapon: String) -> void :
 	if not player.alive or state != "play":

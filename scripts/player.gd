@@ -92,6 +92,9 @@ func equip(idx: int) -> void :
 			if _putin_name != "":
 				vm_anim.play(_putin_name)
 				vm_anim.seek(vm_anim.get_animation(_putin_name).length, true)
+	elif key == "svd":
+		vm_gun = Guns.build_svd_vm(attachs.get(key, {}))
+		vm_is_glb = true
 	else:
 		vm_gun = Guns.build(key, true, attachs.get(key, {}))
 	vm_pivot.add_child(vm_gun)
@@ -235,12 +238,9 @@ func _physics_process(dt: float) -> void :
 	cam.fov = lerpf(cam.fov, target_fov, minf(1.0, 12.0 * dt))
 	var tp: Vector3
 	if vm_is_glb:
-		tp = Vector3(-0.138, 0.104, -0.36) if ads else Vector3(0.26, -0.24, -0.4)
+		tp = def["ads_pos"] if ads else def["hip_pos"]
 		if ads and _optic() == "dot":
-			tp = Vector3(0.0, -0.144, -0.36)
-		var trot: float = -0.42 if ads else 0.0
-		if vm_gun:
-			vm_gun.rotation.x = lerpf(vm_gun.rotation.x, trot, minf(1.0, 12.0 * dt))
+			tp = Vector3(0, -0.068, def["ads_pos"].z)
 	else:
 		tp = def["ads_pos"] if ads else def["hip_pos"]
 		if ads and _optic() == "dot":

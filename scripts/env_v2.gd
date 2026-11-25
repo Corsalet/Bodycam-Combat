@@ -70,6 +70,7 @@ static func foliage_material(base: Color, axis: float, strength: float) -> Shade
 	sm.set_shader_parameter("base_col", base)
 	sm.set_shader_parameter("sway_axis", axis)
 	sm.set_shader_parameter("wind_strength", strength)
+	sm.set_shader_parameter("amb_col", Vector3(0.62, 0.5, 0.38))
 	return sm
 
 
@@ -113,7 +114,7 @@ static func build_tree_multimesh(root: Node3D) -> void :
 	var n: int = trees.size()
 	if n == 0:
 		return
-	var trunk_col: = World.c(5062626).darkened(0.22)
+	var trunk_col: = World.c(8014382).darkened(0.08)
 	var greens: = [World.c(4149798).darkened(0.22), World.c(4873258).darkened(0.22), World.c(3566432).darkened(0.22)]
 
 	var layers: = [

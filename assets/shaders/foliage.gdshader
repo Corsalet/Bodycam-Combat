@@ -7,6 +7,7 @@ uniform vec4 base_col : source_color = vec4(0.2, 0.3, 0.12, 1.0);
 uniform float wind_strength = 0.12;
 uniform float wind_speed = 1.3;
 uniform float sway_axis = 0.0;
+uniform vec3 amb_col = vec3(0.62, 0.5, 0.38);
 
 varying float v_phase;
 varying float v_amp;
@@ -36,4 +37,5 @@ void light() {
 	float nl = dot(NORMAL, LIGHT);
 	float wrapped = clamp(nl * 0.5 + 0.5, 0.0, 1.0);
 	DIFFUSE_LIGHT += ALBEDO * LIGHT_COLOR * ATTENUATION * wrapped;
+	DIFFUSE_LIGHT += ALBEDO * amb_col;
 }

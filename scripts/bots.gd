@@ -125,6 +125,7 @@ func respawn(instant: = false) -> void :
 	position = Vector3(px, main.ground_y(px, pz) + 1.0, pz)
 	velocity = Vector3.ZERO
 	hp = 100
+	collision_layer = 4
 	alive = true
 	enemy = null
 	next_think = randf_range(0, 0.5)
@@ -283,6 +284,7 @@ func die(killer, weapon: String) -> void :
 	if not alive:
 		return
 	alive = false
+	collision_layer = 0
 	respawn_t = 7.0
 	main.tickets[team] = maxf(0.0, main.tickets[team] - 1.0)
 	var killer_name: = "?"
