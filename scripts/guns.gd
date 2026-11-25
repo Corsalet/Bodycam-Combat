@@ -2,7 +2,7 @@ class_name Guns
 
 
 const WPN: = {
-	"ak74": {"name": "АК-74", "len": 0.92, "auto": true, "rpm": 600, "dmg": 34, "mag": 30, "reserve": 120, "reload": 2.3, "s_hip": 1.5, "s_ads": 0.3, "ads_fov": 55, "hip_pos": Vector3(0.28, -0.15, -0.48), "ads_pos": Vector3(0, -0.013, -0.44), "kick": 1.0, "scope": false, "scope_fov": 0.0, "mode": "АВТО"}, 
+	"ak74": {"name": "АК-74", "len": 0.92, "auto": true, "rpm": 600, "dmg": 34, "mag": 30, "reserve": 120, "reload": 2.3, "s_hip": 1.5, "s_ads": 0.3, "ads_fov": 55, "hip_pos": Vector3(0.28, -0.15, -0.48), "ads_pos": Vector3(0, 0.005, -0.44), "kick": 1.0, "scope": false, "scope_fov": 0.0, "mode": "АВТО"}, 
 	"m16": {"name": "М16А4", "len": 1.0, "auto": true, "rpm": 660, "dmg": 32, "mag": 30, "reserve": 120, "reload": 2.2, "s_hip": 1.4, "s_ads": 0.28, "ads_fov": 55, "hip_pos": Vector3(0.14, -0.068, -0.55), "ads_pos": Vector3(0, -0.066, -0.46), "kick": 0.9, "scope": false, "scope_fov": 0.0, "mode": "АВТО"}, 
 	"svd": {"name": "СВД ДРАГУНОВА", "len": 1.22, "auto": false, "rpm": 90, "dmg": 105, "mag": 10, "reserve": 40, "reload": 2.8, "s_hip": 1.9, "s_ads": 0.1, "ads_fov": 18, "hip_pos": Vector3(0.133, -0.088, -0.85), "ads_pos": Vector3(0, -0.16, -0.46), "kick": 1.8, "scope": true, "scope_fov": 18.0, "mode": "ОДИНОЧНЫЙ"}, 
 	"m82": {"name": "M82A1 BARRETT", "len": 1.45, "auto": false, "rpm": 45, "dmg": 150, "mag": 10, "reserve": 30, "reload": 3.4, "s_hip": 2.3, "s_ads": 0.08, "ads_fov": 10, "hip_pos": Vector3(0.136, -0.089, -0.9), "ads_pos": Vector3(0, -0.155, -0.5), "kick": 2.6, "scope": true, "scope_fov": 10.0, "mode": "ОДИНОЧНЫЙ"}, 
@@ -265,6 +265,7 @@ static func build(key: String, viewmodel: = false, attach: = {}) -> Node3D:
 static func build_ak74_vm(attach: = {}) -> Node3D:
 	var scene: PackedScene = load("res://assets/aks74u_vm_r.scn")
 	var root: Node3D = scene.instantiate()
+	root.rotation.y = 0.11
 	var mzl: = -0.966
 	root.set_meta("muzzle_z", mzl)
 	var anims: = root.find_children("*", "AnimationPlayer", true, false)

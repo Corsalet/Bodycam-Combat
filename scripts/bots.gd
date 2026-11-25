@@ -19,6 +19,10 @@ var burst: = 0
 var pause_t: = 0.0
 var react_t: = 0.0
 var _last_enemy_id: = 0
+var detour_t: = 0.0
+var detour_to: Vector3 = Vector3.ZERO
+var stuck_t: = 0.0
+var _stuck_pos: Vector3 = Vector3.ZERO
 var anim_t: = 0.0
 var parts: Dictionary = {}
 var gun: Node3D
@@ -129,6 +133,8 @@ func respawn(instant: = false) -> void :
 	hp = 100
 	collision_layer = 4
 	alive = true
+	stuck_t = 0.0
+	detour_t = 0.0
 	enemy = null
 	next_think = randf_range(0, 0.5)
 	anim_state = ""
@@ -149,6 +155,7 @@ func _physics_process(dt: float) -> void :
 			respawn()
 		return
 	react_t = maxf(0.0, react_t - dt)
+	detour_t = maxf(0.0, detour_t - dt)
 	next_think -= dt
 	if next_think <= 0.0:
 		next_think = randf_range(0.3, 0.6)
@@ -164,6 +171,8 @@ func _physics_process(dt: float) -> void :
 		_shoot(dt)
 	elif not frozen and parts.has("goal"):
 		var goal: Vector3 = reinforce_to if reinforcing else parts["goal"]
+		if detour_t > 0.0:
+			goal = detour_to
 		var to: = goal - global_position
 		to.y = 0
 		if to.length() > 2.0:
@@ -171,9 +180,23 @@ func _physics_process(dt: float) -> void :
 			velocity.z = to.normalized().z * walk_spd
 			rotation.y = atan2( - to.x, - to.z) if absf(to.z) > 0.001 else ( - PI / 2.0 if to.x > 0.0 else PI / 2.0)
 			moving = true
+			if detour_t <= 0.0:
+				if global_position.distance_to(_stuck_pos) < walk_spd * dt * 0.15:
+					stuck_t += dt
+					if stuck_t > 1.2:
+						stuck_t = 0.0
+						var side: = Vector3( - to.z, 0, to.x).normalized()
+						if side.length() < 0.1:
+							side = Vector3(1, 0, 0)
+						detour_to = global_position + side * (6.0 + randf() * 5.0) * (1.0 if randf() < 0.5 else -1.0) + to.normalized() * 3.0
+						detour_t = 6.0
+				else:
+					stuck_t = 0.0
+				_stuck_pos = global_position
 		else:
 			velocity.x = 0
 			velocity.z = 0
+			detour_t = 0.0
 	else:
 		velocity.x = 0
 		velocity.z = 0
