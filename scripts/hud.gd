@@ -489,7 +489,7 @@ func _build_menu() -> void :
 	var foot: = HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 10)
 	var f1: = Label.new()
-	f1.text = "BUILD 20 • v0.4.5 G2  КАРТА «ПЕРЕВАЛ-9»"
+	f1.text = "BUILD 21 • v0.4.6 G1  КАРТА «ПЕРЕВАЛ-9»"
 	f1.add_theme_font_size_override("font_size", 10)
 	f1.add_theme_color_override("font_color", COL_FOOT)
 	foot.add_child(f1)
