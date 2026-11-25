@@ -22,6 +22,7 @@ var ads: = false
 var sprint: = false
 var heal_t: = 0.0
 var bandages: = 5
+var no_dmg_t: = 0.0
 var recoil: = 0.0
 var cam: Camera3D
 var vm_pivot: Node3D
@@ -269,6 +270,9 @@ func _physics_process(dt: float) -> void :
 	if heal_t > 0.0:
 		heal_t -= dt
 		hp = minf(100.0, hp + 20.0 * dt)
+	no_dmg_t += dt
+	if heal_t <= 0.0 and hp > 0.0 and hp < 100.0 and no_dmg_t > 5.0:
+		hp = minf(100.0, hp + 5.0 * dt)
 
 	if global_position.y < main.ground_y(global_position.x, global_position.z) - 4.0:
 		print("RESCUE y=", snappedf(global_position.y, 0.1))
@@ -344,6 +348,7 @@ func die(killer_name: String, weapon: String) -> void :
 	respawn_t = 6.0
 	main.audio.play("death")
 	main.hud.show_death(killer_name, weapon)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func respawn() -> void :
 	var base: Dictionary = World.BASES[team]
@@ -355,6 +360,8 @@ func respawn() -> void :
 	hp = 100
 	alive = true
 	spawn_prot = 2.5
+	no_dmg_t = 0.0
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	heal_t = 0.0
 	bandages = 5
 	for w2 in weapons:

@@ -1,7 +1,7 @@
 extends Node3D
 
 
-const VER: = "0.4.7 G1"
+const VER: = "0.4.8 G1"
 
 var state: = "menu"
 var mouse_sens: = 1.0
@@ -350,6 +350,7 @@ func hurt_player(dmg: float, killer_name: String, weapon: String) -> void :
 	if player.spawn_prot > 0.0:
 		return
 	player.hp -= dmg
+	player.no_dmg_t = 0.0
 	audio.play("hurt", -4.0)
 	if player.hp <= 0.0:
 		player.die(killer_name, weapon)

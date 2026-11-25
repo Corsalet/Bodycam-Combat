@@ -114,7 +114,11 @@ static func build_tree_multimesh(root: Node3D) -> void :
 	var n: int = trees.size()
 	if n == 0:
 		return
-	var trunk_col: = World.c(8014382).darkened(0.08)
+	var trunk_col: = World.c(8014382).darkened(0.05)
+	var trunk_mat: = StandardMaterial3D.new()
+	trunk_mat.albedo_color = trunk_col
+	trunk_mat.roughness = 1.0
+
 	var greens: = [World.c(4149798).darkened(0.22), World.c(4873258).darkened(0.22), World.c(3566432).darkened(0.22)]
 
 	var layers: = [
@@ -127,7 +131,8 @@ static func build_tree_multimesh(root: Node3D) -> void :
 	var rng: = RandomNumberGenerator.new()
 	rng.seed = 777
 	var wgen: = foliage_material(Color(1, 1, 1), 1.0, 0.14)
-	for L in layers:
+	for li in layers.size():
+		var L: Array = layers[li]
 		var mm: = MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.use_colors = true
@@ -135,10 +140,12 @@ static func build_tree_multimesh(root: Node3D) -> void :
 		mm.mesh = _layer_mesh(L[0], L[1], L[2], L[6])
 		mm.instance_count = n
 		mm.custom_aabb = AABB(Vector3( - 245, -20, -245), Vector3(490, 80, 490))
-		var sm: = foliage_material(L[5], 1.0, 0.14)
 		var mmi: = MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.material_override = sm
+		if li == 0:
+			mmi.material_override = trunk_mat
+		else:
+			mmi.material_override = foliage_material(L[5], 1.0, 0.14)
 		for i in n:
 			var t: Array = trees[i]
 			var s: float = t[2]
@@ -168,7 +175,7 @@ static func decorate(root: Node3D) -> void :
 		_fire(root, -22, 22)
 		_fire(root, 96, 94)
 		return
-	_grass(root, 8000 if web else 15000)
+	_grass(root, 4000 if web else 12000)
 	for pond in [[ - 55, -45, 9.0], [60, 50, 8.5]]:
 		_pond(root, pond[0], pond[1], pond[2])
 	if fwd:
@@ -388,6 +395,7 @@ static func upgrade_environment(e: Environment, sun: DirectionalLight3D) -> void
 	sun.rotation_degrees = Vector3( - 13, 28, 0)
 	sun.light_color = Color(1.0, 0.74, 0.5)
 	sun.light_energy = 1.15
+	sun.shadow_enabled = not web
 	var sm: = e.sky.sky_material as ProceduralSkyMaterial
 	if sm:
 		sm.sky_top_color = Color(0.19, 0.24, 0.33)

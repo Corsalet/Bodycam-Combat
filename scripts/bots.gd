@@ -156,6 +156,9 @@ func _physics_process(dt: float) -> void :
 		return
 	react_t = maxf(0.0, react_t - dt)
 	detour_t = maxf(0.0, detour_t - dt)
+	if enemy != null and ( not is_instance_valid(enemy) or not enemy.get("alive")):
+		enemy = null
+		burst = 0
 	next_think -= dt
 	if next_think <= 0.0:
 		next_think = randf_range(0.3, 0.6)
@@ -243,10 +246,10 @@ func _think() -> void :
 			best = b
 			best_d = d
 			enemy_is_player = false
-		enemy = best
+	enemy = best
 	if enemy != null and enemy.get_instance_id() != _last_enemy_id:
 		_last_enemy_id = enemy.get_instance_id()
-		react_t = randf_range(0.35, 0.85)
+		react_t = randf_range(0.5, 1.1)
 
 func _los(target: Vector3) -> bool:
 	var from: = global_position + Vector3(0, 1.5, 0)
@@ -268,6 +271,24 @@ func _combat_move(dt: float) -> void :
 		v = - to.normalized() * walk_spd * 0.7
 	else:
 		v = Vector3( - to.z, 0, to.x).normalized() * walk_spd * 0.45 * sin(anim_t * 0.7)
+	if detour_t > 0.0:
+		var dto: = detour_to - global_position
+		dto.y = 0
+		if dto.length() > 1.5:
+			v = dto.normalized() * walk_spd
+	if detour_t <= 0.0 and v.length() > 0.5 and d > want:
+		if global_position.distance_to(_stuck_pos) < v.length() * dt * 0.15:
+			stuck_t += dt
+			if stuck_t > 1.0:
+				stuck_t = 0.0
+				var side: = Vector3( - to.z, 0, to.x).normalized()
+				if side.length() < 0.1:
+					side = Vector3(1, 0, 0)
+				detour_to = global_position + side * (6.0 + randf() * 5.0) * (1.0 if randf() < 0.5 else -1.0) + to.normalized() * 3.0
+				detour_t = 5.0
+		else:
+			stuck_t = 0.0
+		_stuck_pos = global_position
 	velocity.x = v.x
 	velocity.z = v.z
 
@@ -299,7 +320,9 @@ func _shoot(dt: float) -> void :
 		elif (main.player.velocity as Vector3).length() > 1.5:
 			moving_f = 0.78
 	var scope_f: = 0.55 if _def()["scope"] else 1.0
-	var hit_chance: float = clampf(0.26 - dist * 0.0028, 0.05, 0.26) * moving_f * scope_f
+	var hit_chance: float = clampf(0.17 - dist * 0.0022, 0.03, 0.17) * moving_f * scope_f
+	if main.test_mode:
+		hit_chance = maxf(hit_chance, 0.9)
 	var will_hit: = los_hit.is_empty() and randf() < hit_chance
 	if not will_hit:
 		aim += Vector3(randf_range(-1.2, 1.2), randf_range(-0.5, 0.8), randf_range(-1.2, 1.2))
@@ -307,11 +330,11 @@ func _shoot(dt: float) -> void :
 	var t_end: Vector3 = aim if (los_hit.is_empty() or will_hit) else (los_hit["position"] as Vector3)
 	main.fx.tracer(muzzle, t_end)
 	if will_hit:
-		var dmg: = randf_range(8, 17) * (2.6 if _def()["scope"] else 1.0)
+		var dmg: = randf_range(6, 13) * (2.6 if _def()["scope"] else 1.0)
 		dmg *= clampf(1.0 - dist * 0.002, 0.6, 1.0)
 		if enemy_is_player:
 			main.hurt_player(dmg, bname, _def()["name"])
-		else:
+		elif e is BotBody:
 			main.hurt_bot(e, dmg * 2.2, self, _def()["name"])
 	else:
 		main.audio.play("whiz", -6.0)
