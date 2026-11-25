@@ -1,7 +1,7 @@
 extends Node3D
 
 
-const VER: = "0.4.8 G1"
+const VER: = "0.5.0 G1"
 
 var state: = "menu"
 var mouse_sens: = 1.0
@@ -23,6 +23,7 @@ var unlock_t: = 0.0
 var _dbg_t: = 0.0
 var _test_frames: = 0
 var names_left: = {"RU": 0, "US": 0}
+var live_grenades: Array[Dictionary] = []
 const BOT_NAMES: = {
 	"RU": ["Волков", "Морозов", "Соколов", "Орлов", "Кузнецов", "Белов", "Зайцев", "Громов", "Данилов", "Ильин"], 
 	"US": ["Miller", "Carter", "Brooks", "Hayes", "Reed", "Coleman", "Barnes", "Turner", "Ward", "Quinn"], 
@@ -130,6 +131,9 @@ func _autostart() -> void :
 	start_match("RU", "assault")
 
 func start_match(team: String, cls: String) -> void :
+	for gr in live_grenades:
+		(gr["mesh"] as Node3D).queue_free()
+	live_grenades.clear()
 	for b in bots:
 		b.queue_free()
 	bots.clear()
@@ -258,7 +262,7 @@ func _tick_squads(dt: float) -> void :
 
 		var pv: Vector3 = Vector3(points[s["point"]]["x"], 0, points[s["point"]]["z"])
 		for m in s["members"]:
-			if is_instance_valid(m) and m.alive and m.enemy == null and not m.reinforcing:
+			if is_instance_valid(m) and m.alive and m.enemy == null and not m.reinforcing and m.alert_t <= 0.0:
 				m.parts["goal"] = pv + m.squad_off
 
 	for s2 in squads:
@@ -291,7 +295,7 @@ func _tick_squads(dt: float) -> void :
 				continue
 			var idle: Array = []
 			for m in s2["members"]:
-				if is_instance_valid(m) and m.alive and m.enemy == null and not m.reinforcing:
+				if is_instance_valid(m) and m.alive and m.enemy == null and not m.reinforcing and m.alert_t <= 0.0:
 					idle.append(m)
 			var keep: int = 2 if idle.size() >= 5 else (1 if idle.size() >= 3 else 0)
 			for si in mini(3, idle.size() - keep):
@@ -317,6 +321,18 @@ func team_goal(team: String, bot: BotBody) -> Vector3:
 		best = points[0]
 	return Vector3(best["x"] + randf_range(-6, 6), 0, best["z"] + randf_range(-6, 6))
 
+
+func pick_spawn(team: String) -> Vector3:
+	var base: Dictionary = World.BASES[team]
+	var basev: = Vector2(base["x"], base["z"])
+	var cands: Array = [basev]
+	for p in points:
+		if p["owner"] == team:
+			cands.append(Vector2(p["x"], p["z"]))
+	var c: Vector2 = cands[randi() % cands.size()]
+	if c == basev:
+		return Vector3(c.x + randf_range( - 7, 7), 0, c.y + (randf_range( - 18, - 13) if team == "US" else randf_range(13, 18)))
+	return Vector3(c.x + randf_range( - 6, 6), 0, c.y + randf_range( - 6, 6))
 
 func ground_y(x: float, z: float) -> float:
 	var from: = Vector3(x, World.terrain_h(x, z) + 6.0, z)
@@ -344,7 +360,73 @@ func raycast_hit(from: Vector3, dir: Vector3, max_dist: float, exclude: Node3D) 
 		return h
 	return {}
 
-func hurt_player(dmg: float, killer_name: String, weapon: String) -> void :
+func noise_event(pos: Vector3, radius: float) -> void :
+	for b in bots:
+		if is_instance_valid(b) and b.alive:
+			b.alert(pos, radius)
+
+func throw_grenade(origin: Vector3, vel: Vector3) -> void :
+	var mesh: = MeshInstance3D.new()
+	var sm: = SphereMesh.new()
+	sm.radius = 0.07
+	sm.height = 0.14
+	mesh.mesh = sm
+	var m: = StandardMaterial3D.new()
+	m.albedo_color = Color(0.25, 0.32, 0.17)
+	m.roughness = 0.7
+	mesh.material_override = m
+	add_child(mesh)
+	mesh.global_position = origin
+	live_grenades.append({"pos": origin, "vel": vel, "t": Guns.GRENADE["fuse"], "mesh": mesh})
+
+func _tick_grenades(dt: float) -> void :
+	if live_grenades.is_empty():
+		return
+	var R: float = Guns.GRENADE["radius"]
+	var DMG: float = Guns.GRENADE["dmg"]
+	for i in range(live_grenades.size() - 1, -1, -1):
+		var gr: Dictionary = live_grenades[i]
+		gr["t"] = float(gr["t"]) - dt
+		var v: Vector3 = gr["vel"]
+		v.y -= 16.0 * dt
+		var np: Vector3 = gr["pos"] + v * dt
+		var gy: float = World.terrain_h(np.x, np.z)
+		if np.y <= gy + 0.07 and v.y < 0.0:
+			np.y = gy + 0.07
+			v.y = - v.y * 0.38
+			v.x *= 0.72
+			v.z *= 0.72
+		var q: = PhysicsRayQueryParameters3D.create(gr["pos"], np, 1 | 4)
+		var h: = space_state.intersect_ray(q)
+		if not h.is_empty():
+			np = h["position"]
+			v = v.bounce(h["normal"]) * 0.42
+		gr["vel"] = v
+		gr["pos"] = np
+		(gr["mesh"] as Node3D).global_position = np
+		if float(gr["t"]) <= 0.0:
+			(gr["mesh"] as Node3D).queue_free()
+			live_grenades.remove_at(i)
+			_explode(np, R, DMG)
+
+func _explode(pos: Vector3, R: float, DMG: float) -> void :
+	fx.explosion(pos)
+	audio.play("explode", 0.0, randf_range(0.9, 1.05))
+	noise_event(pos, 55.0)
+	for b in bots:
+		if not b.alive or b.team == player.team:
+			continue
+		var d3: float = b.global_position.distance_to(pos)
+		if d3 < R + 1.2:
+			var q: = PhysicsRayQueryParameters3D.create(pos + Vector3(0, 0.3, 0), b.global_position + Vector3(0, 0.9, 0), 1)
+			if space_state.intersect_ray(q).is_empty():
+				hurt_bot(b, DMG * clampf(1.0 - d3 / R, 0.12, 1.0), "player", "РГД-5")
+	if player.alive and state == "play":
+		var dp: float = player.global_position.distance_to(pos)
+		if dp < R:
+			hurt_player(DMG * Guns.GRENADE["self_dmg"] * clampf(1.0 - dp / R, 0.15, 1.0), "ГРАНАТА", "РГД-5", pos)
+
+func hurt_player(dmg: float, killer_name: String, weapon: String, from_pos: Vector3 = Vector3.ZERO) -> void :
 	if not player.alive or state != "play":
 		return
 	if player.spawn_prot > 0.0:
@@ -352,6 +434,13 @@ func hurt_player(dmg: float, killer_name: String, weapon: String) -> void :
 	player.hp -= dmg
 	player.no_dmg_t = 0.0
 	audio.play("hurt", -4.0)
+	hud.hurt_flash()
+	if from_pos != Vector3.ZERO:
+		var fwd: = Vector3( - sin(player.yaw), 0, - cos(player.yaw))
+		var rgt: = Vector3(cos(player.yaw), 0, - sin(player.yaw))
+		var to: = from_pos - player.global_position
+		to.y = 0
+		hud.show_dmg_dir(atan2(to.dot(rgt), to.dot(fwd)))
 	if player.hp <= 0.0:
 		player.die(killer_name, weapon)
 
@@ -394,6 +483,8 @@ func _tick_points(dt: float) -> void :
 				if player.team == "RU":
 					player.money += 150
 					hud.set_money(player.money)
+					if player.alive and Vector2(player.global_position.x - p["x"], player.global_position.z - p["z"]).length() < p["r"] + 4.0:
+						player.caps += 1
 				(p["flag"] as StandardMaterial3D).albedo_color = Hud.COL_RU
 			if p["prog"] <= -100.0 and p["owner"] != "US":
 				p["owner"] = "US"
@@ -401,6 +492,8 @@ func _tick_points(dt: float) -> void :
 				if player.team == "US":
 					player.money += 150
 					hud.set_money(player.money)
+					if player.alive and Vector2(player.global_position.x - p["x"], player.global_position.z - p["z"]).length() < p["r"] + 4.0:
+						player.caps += 1
 				(p["flag"] as StandardMaterial3D).albedo_color = Hud.COL_US
 			if (prev > 0.0 and p["prog"] <= 0.0 and p["owner"] == "RU") or (prev < 0.0 and p["prog"] >= 0.0 and p["owner"] == "US"):
 				p["owner"] = null
@@ -446,13 +539,14 @@ func _process(dt: float) -> void :
 	if DisplayServer.get_name() != "headless" and not test_mode:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			unlock_t = 0.0
-		else:
+		elif player and player.alive:
 			unlock_t += dt
 			if unlock_t > 0.8:
 				state = "pause"
 				hud.show_pause()
 				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 				return
+	_tick_grenades(dt)
 	elapsed += dt
 	time_left -= dt
 	if time_left <= 0.0:
@@ -467,6 +561,23 @@ func _process(dt: float) -> void :
 	hud.set_score(int(ceil(tickets["RU"])), int(ceil(tickets["US"])), int(time_left))
 	var tc: = "%02d:%02d" % [int(elapsed) / 60, int(elapsed) % 60]
 	hud.set_timecode(tc)
+	var cap_txt: = ""
+	var cap_frac: = 0.0
+	if player.alive:
+		for p in points:
+			var pd: float = Vector2(player.global_position.x - p["x"], player.global_position.z - p["z"]).length()
+			if pd < p["r"]:
+				var own_frac: float = clampf(p["prog"] / 100.0, 0.0, 1.0) if player.team == "RU" else clampf( - p["prog"] / 100.0, 0.0, 1.0)
+				if p["contested"]:
+					cap_txt = "ТОЧКА " + str(p["id"]) + " — СПОР ЗА КОНТРОЛЬ"
+				elif p["owner"] == player.team:
+					cap_txt = "ТОЧКА " + str(p["id"]) + " — УДЕРЖАНИЕ"
+					cap_frac = own_frac
+				else:
+					cap_txt = "ЗАХВАТ ТОЧКИ " + str(p["id"])
+					cap_frac = own_frac
+				break
+	hud.set_capture(cap_txt, cap_frac)
 
 func _run_menushot() -> void :
 	await get_tree().create_timer(1.5).timeout
@@ -747,6 +858,84 @@ func _run_test() -> void :
 		var hpB: float = player.hp
 		await get_tree().create_timer(1.5).timeout
 		print("TEST_WALLSHOT blocked=", blocked, " hpA=", int(hpA), " hpB=", int(hpB), " hpC=", int(player.hp), " -> ", "WALL_OK" if (blocked and hpB == player.hp) else "WALL_FAIL")
+
+	var k2: = InputEventKey.new()
+	k2.keycode = KEY_2
+	k2.physical_keycode = KEY_2
+	k2.pressed = true
+	Input.parse_input_event(k2)
+	await get_tree().create_timer(0.4).timeout
+	var sw1: bool = player.weapons[player.w_idx]["key"] == "makarov"
+	var k1: = InputEventKey.new()
+	k1.keycode = KEY_1
+	k1.physical_keycode = KEY_1
+	k1.pressed = true
+	Input.parse_input_event(k1)
+	await get_tree().create_timer(0.4).timeout
+	var k1u: = InputEventKey.new()
+	k1u.keycode = KEY_1
+	k1u.physical_keycode = KEY_1
+	k1u.pressed = false
+	Input.parse_input_event(k1u)
+	var sw2: bool = player.weapons[player.w_idx]["key"] == "ak74"
+	print("TEST_SWITCH w=", player.weapons[player.w_idx]["key"], " -> ", "SWITCH_OK" if (sw1 and sw2) else "SWITCH_FAIL")
+
+	var kc: = InputEventKey.new()
+	kc.keycode = KEY_CTRL
+	kc.physical_keycode = KEY_CTRL
+	kc.pressed = true
+	Input.parse_input_event(kc)
+	await get_tree().create_timer(0.4).timeout
+	var cr: bool = player.crouch and player.cam.position.y < 1.4
+	var kcu: = InputEventKey.new()
+	kcu.keycode = KEY_CTRL
+	kcu.physical_keycode = KEY_CTRL
+	kcu.pressed = false
+	Input.parse_input_event(kcu)
+	await get_tree().create_timer(0.3).timeout
+	print("TEST_CROUCH cam_y=", snappedf(player.cam.position.y, 0.01), " -> ", "CROUCH_OK" if cr else "CROUCH_FAIL")
+
+	player.global_position = Vector3(60, ground_y(60, 60) + 1.0, 60)
+	player.velocity = Vector3.ZERO
+	player.yaw = 0.0
+	player.rotation.y = 0.0
+	player.pitch = 0.0
+	player.grenades = 2
+	player.throw_t = 0.0
+	var tg: = _spawn_target(6.0)
+	if tg:
+		tg.frozen = true
+		var kg: = InputEventKey.new()
+		kg.keycode = KEY_G
+		kg.physical_keycode = KEY_G
+		kg.pressed = true
+		Input.parse_input_event(kg)
+		await get_tree().create_timer(0.3).timeout
+		var kg2: = InputEventKey.new()
+		kg2.keycode = KEY_G
+		kg2.physical_keycode = KEY_G
+		kg2.pressed = false
+		Input.parse_input_event(kg2)
+		await get_tree().create_timer(3.5).timeout
+		print("TEST_GRENADE hp=", int(tg.hp), " alive=", tg.alive, " -> ", "GRENADE_OK" if (( not tg.alive) or tg.hp < 100) else "GRENADE_FAIL")
+		bots.erase(tg)
+		tg.queue_free()
+
+	var tb_bot: = BotBody.new()
+	tb_bot.process_mode = Node.PROCESS_MODE_PAUSABLE
+	tb_bot.setup(self, "US", "РАЗВЕДЧИК", "ak74")
+	add_child(tb_bot)
+	bots.append(tb_bot)
+	tb_bot.position = Vector3(player.global_position.x + 30, 0, player.global_position.z + 30)
+	tb_bot.position.y = ground_y(tb_bot.position.x, tb_bot.position.z) + 1.0
+	tb_bot.frozen = true
+	tb_bot.enemy = null
+	tb_bot.alert_t = 0.0
+	noise_event(player.global_position, 60.0)
+	await get_tree().create_timer(0.5).timeout
+	print("TEST_ALERT alert_t=", snappedf(tb_bot.alert_t, 0.1), " enemy=", tb_bot.enemy != null, " -> ", "ALERT_OK" if (tb_bot.alert_t > 0.0 or tb_bot.enemy != null) else "ALERT_FAIL")
+	bots.erase(tb_bot)
+	tb_bot.queue_free()
 
 	start_match("US", "sniper")
 	await get_tree().create_timer(0.5).timeout

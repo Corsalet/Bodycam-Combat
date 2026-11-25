@@ -15,6 +15,13 @@ const FLATS: = [
 
 const BASES: = {"RU": {"x": -172, "z": 152}, "US": {"x": 172, "z": -152}}
 
+const AMMO_ZONES: = [
+	{"x": -176, "z": 150, "r": 7.0}, 
+	{"x": 168, "z": -154, "r": 7.0}, 
+	{"x": 10, "z": 9.5, "r": 6.0}, 
+	{"x": 109, "z": 101.5, "r": 6.0}, 
+]
+
 const CONTAINER_COLORS: = [9387820, 2903918, 5004851, 6710882, 7690538, 6174005]
 
 static var rng: = RandomNumberGenerator.new()

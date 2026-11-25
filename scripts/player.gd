@@ -41,6 +41,12 @@ var vm_is_glb: = false
 var _putin_name: = ""
 var _fire_name: = ""
 var _reload_name: = ""
+var crouch: = false
+var grenades: = 2
+var throw_t: = 0.0
+var bloom: = 0.0
+var step_t: = 0.0
+var resupply_t: = 0.0
 const SHOP: = [
 	{"id": "dot", "name": "КОЛЛИМАТОР 1П63", "price": 250}, 
 	{"id": "pso", "name": "ОПТИКА ПСО-1", "price": 400}, 
@@ -52,7 +58,7 @@ func setup(m: Node, p_team: String, p_cls: String) -> void :
 	main = m
 	team = p_team
 	cls = p_cls
-	collision_mask = 1
+	collision_mask = 5
 	collision_layer = 2
 	var cs: = CollisionShape3D.new()
 	var cap: = CapsuleShape3D.new()
@@ -70,6 +76,7 @@ func setup(m: Node, p_team: String, p_cls: String) -> void :
 	for key in Guns.CLASSES[team][cls]:
 		weapons.append({"key": key, "mag": Guns.WPN[key]["mag"], "reserve": Guns.WPN[key]["reserve"]})
 	equip(0)
+	main.hud.set_grenades(grenades)
 
 func equip(idx: int) -> void :
 	w_idx = idx
@@ -101,7 +108,8 @@ func equip(idx: int) -> void :
 		vm_gun = Guns.build(key, true, attachs.get(key, {}))
 	vm_pivot.add_child(vm_gun)
 	reload_t = 0.0
-	main.hud.set_ammo(weapons[w_idx]["mag"], weapons[w_idx]["reserve"], Guns.WPN[key]["name"], Guns.WPN[key]["mode"])
+	var wc: Dictionary = weapons[w_idx]
+	main.hud.set_ammo(wc["mag"], wc["reserve"], Guns.WPN[key]["name"], Guns.WPN[key]["mode"], wc["mag"] <= maxi(1, _mag_cap() / 4))
 	main.hud.show_switch(Guns.WPN[key]["name"])
 
 func _unhandled_input(event: InputEvent) -> void :
@@ -183,7 +191,9 @@ func _physics_process(dt: float) -> void :
 			respawn()
 		return
 	var def: = _def()
-	sprint = Input.is_physical_key_pressed(KEY_SHIFT) and reload_t <= 0.0
+	var ck: = Input.is_physical_key_pressed(KEY_CTRL) or Input.is_physical_key_pressed(KEY_C)
+	crouch = ck and alive
+	sprint = Input.is_physical_key_pressed(KEY_SHIFT) and reload_t <= 0.0 and not crouch and not ads
 	var mx: = 0.0
 	var mz: = 0.0
 	if Input.is_physical_key_pressed(KEY_W):
@@ -194,7 +204,7 @@ func _physics_process(dt: float) -> void :
 		mx -= 1
 	if Input.is_physical_key_pressed(KEY_D):
 		mx += 1
-	var spd: float = 2.4 if ads else (7.0 if sprint else 4.7)
+	var spd: float = 2.2 if crouch else (2.4 if ads else (7.0 if sprint else 4.7))
 	var moving: = (mx != 0.0 or mz != 0.0)
 	var fwd: = Vector3( - sin(yaw), 0, - cos(yaw))
 	var right: = Vector3(cos(yaw), 0, - sin(yaw))
@@ -207,6 +217,7 @@ func _physics_process(dt: float) -> void :
 	if Input.is_physical_key_pressed(KEY_SPACE) and is_on_floor():
 		velocity.y = 4.6
 	spawn_prot = maxf(0.0, spawn_prot - dt)
+	throw_t = maxf(0.0, throw_t - dt)
 	ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and reload_t <= 0.0
 	if Input.is_physical_key_pressed(KEY_R) and reload_t <= 0.0:
 		var w: Dictionary = weapons[w_idx]
@@ -229,16 +240,36 @@ func _physics_process(dt: float) -> void :
 			if kp and not _key_prev.get("n%d" % i, false):
 				buy(i)
 			_key_prev["n%d" % i] = kp
+	if not shop_open:
+		for wi in 2:
+			if wi < weapons.size():
+				var wp: = Input.is_physical_key_pressed(KEY_1 + wi)
+				if wp and not _key_prev.get("w%d" % wi, false) and wi != w_idx:
+					main.audio.play("switch")
+					equip(wi)
+				_key_prev["w%d" % wi] = wp
 	if not shop_open and (Input.is_physical_key_pressed(KEY_3) or Input.is_physical_key_pressed(KEY_H)) and heal_t <= 0.0 and bandages > 0 and hp < 100:
 		heal_t = 2.0
 		bandages -= 1
 		main.audio.play("heal")
+	var gk: = Input.is_physical_key_pressed(KEY_G) or Input.is_physical_key_pressed(KEY_4)
+	if gk and not _key_prev.get("g", false) and grenades > 0 and throw_t <= 0.0 and heal_t <= 0.0:
+		grenades -= 1
+		throw_t = 1.0
+		main.audio.play("pin")
+		var gdir: = - cam.global_transform.basis.z
+		if pitch != 0.0:
+			gdir = (gdir + Vector3.UP * tan(clampf(pitch, -0.9, 0.9)) * 0.9).normalized()
+		main.throw_grenade(cam.global_position + gdir * 0.5, gdir * Guns.GRENADE["vel"] + velocity * 0.35)
+		main.hud.set_grenades(grenades)
+	_key_prev["g"] = gk
 	move_and_slide()
 
 	cam.rotation = Vector3(pitch, 0, 0)
 	rotation = Vector3(0, yaw, 0)
+	cam.position.y = lerpf(cam.position.y, 1.08 if crouch else EYE, minf(1.0, 10.0 * dt))
 	var scoped: bool = ads and (def["scope"] or _optic() == "pso")
-	var target_fov: float = 20.0 if scoped else def["ads_fov"] if ads else 75.0
+	var target_fov: float = 20.0 if scoped else def["ads_fov"] if ads else (79.0 if sprint else 75.0)
 	cam.fov = lerpf(cam.fov, target_fov, minf(1.0, 12.0 * dt))
 	var tp: Vector3
 	if vm_is_glb:
@@ -252,6 +283,7 @@ func _physics_process(dt: float) -> void :
 	vm_pivot.position = vm_pivot.position.lerp(tp, minf(1.0, 14.0 * dt))
 	vm_gun.visible = not scoped
 	recoil = maxf(0.0, recoil - dt * 6.0)
+	bloom = maxf(0.0, bloom - dt * 2.2)
 	vm_pivot.rotation.x = lerpf(vm_pivot.rotation.x, recoil * 0.06, minf(1.0, 10.0 * dt))
 	fire_t -= dt
 	if reload_t > 0.0:
@@ -262,7 +294,7 @@ func _physics_process(dt: float) -> void :
 			var take: int = mini(need, w["reserve"])
 			w["mag"] = w["mag"] + take
 			w["reserve"] = w["reserve"] - take
-			main.hud.set_ammo(w["mag"], w["reserve"], def["name"], def["mode"])
+			main.hud.set_ammo(w["mag"], w["reserve"], def["name"], def["mode"], w["mag"] <= maxi(1, _mag_cap() / 4))
 			if vm_anim and _putin_name != "":
 				vm_anim.speed_scale = 1.0
 				vm_anim.play(_putin_name, 0.1)
@@ -286,10 +318,45 @@ func _physics_process(dt: float) -> void :
 			fire_t = 0.25
 			main.audio.play("dry")
 	_lmb_prev = lmb
+	if is_on_floor() and Vector2(velocity.x, velocity.z).length() > 1.2 and not crouch:
+		step_t -= dt
+		if step_t <= 0.0:
+			step_t = 0.31 if sprint else 0.42
+			main.audio.play("step_r" if randf() < 0.5 else "step", -8.0, randf_range(0.9, 1.1))
+	var near_ammo: = false
+	for z in World.AMMO_ZONES:
+		if Vector2(global_position.x - z["x"], global_position.z - z["z"]).length() < z["r"]:
+			near_ammo = true
+			break
+	if near_ammo and alive:
+		var need: = false
+		for w2 in weapons:
+			if w2["reserve"] < Guns.WPN[w2["key"]]["reserve"]:
+				need = true
+		if need:
+			resupply_t -= dt
+			if resupply_t <= 0.0:
+				resupply_t = 1.4
+				for w2 in weapons:
+					var d2: Dictionary = Guns.WPN[w2["key"]]
+					w2["reserve"] = mini(d2["reserve"], w2["reserve"] + d2["mag"])
+				main.audio.play("switch", -6.0)
+				main.hud.show_switch("БОЕПРИПАСЫ ПОПОЛНЕНЫ")
+				var wc: Dictionary = weapons[w_idx]
+				main.hud.set_ammo(wc["mag"], wc["reserve"], _def()["name"], _def()["mode"], wc["mag"] <= maxi(1, _mag_cap() / 4))
 	main.hud.set_health(hp, bandages)
 	main.hud.set_heal(heal_t / 2.0)
 	main.hud.set_ads_scope(scoped)
 	main.hud.set_dot(ads and _optic() == "dot" and not scoped)
+	main.hud.set_crosshair(not ads and not shop_open, _spread_now(def) * 8.5 * (75.0 / cam.fov))
+	main.hud.set_lowhp(hp < 35.0 and alive)
+
+func _spread_now(def: Dictionary) -> float:
+	var mv: float = Vector2(velocity.x, velocity.z).length()
+	var s: float = (def["s_ads"] if ads else def["s_hip"]) + bloom + mv * 0.09
+	if crouch:
+		s *= 0.72
+	return s
 
 func _fire(def: Dictionary) -> void :
 	var w: Dictionary = weapons[w_idx]
@@ -298,38 +365,39 @@ func _fire(def: Dictionary) -> void :
 	if vm_anim and _fire_name != "":
 		vm_anim.play(_fire_name, 0.05)
 	main.audio.play(weapons[w_idx]["key"], -10.0 if _att("sup") else 0.0)
-	var spread_deg: float = (def["s_ads"] if ads else def["s_hip"]) + recoil * 0.25
+	main.noise_event(global_position, 42.0 if not _att("sup") else 14.0)
+	var spread_deg: float = _spread_now(def)
+	bloom = minf(def["bloom_max"], bloom + def["bloom"])
 	recoil += def["kick"]
 	pitch += def["kick"] * 0.008
+	yaw += randf_range( - 1.0, 1.0) * def["kick"] * 0.002
+	rotation.y = yaw
 	var muzzle: = vm_gun.global_position + vm_gun.global_transform.basis * Vector3(0, 0, vm_gun.get_meta("muzzle_z"))
 	main.fx.flash(muzzle, def["len"] * (0.4 if _att("sup") else 0.8), true)
 	var hits: = 0
-	var shots: = 1
-	if not ads and def["auto"] and def["s_hip"] > 1.3:
-		shots = 1
-	for i in shots:
-		var dir: = _spread_dir(spread_deg)
-		var hit: Dictionary = main.raycast_hit(cam.global_position, dir, 400.0, self)
-		if hit.is_empty():
-			main.fx.tracer(muzzle, cam.global_position + dir * 120.0)
+	var dir: = _spread_dir(spread_deg)
+	var hit: Dictionary = main.raycast_hit(cam.global_position, dir, 400.0, self)
+	if hit.is_empty():
+		main.fx.tracer(muzzle, cam.global_position + dir * 120.0)
+	else:
+		main.fx.tracer(muzzle, hit["position"])
+		var collider: Object = hit["collider"]
+		if collider is BotBody and (collider as BotBody).team != team:
+			var bot: = collider as BotBody
+			var rel: float = hit["position"].y - bot.global_position.y
+			var bx: float = (bot.global_transform.basis.inverse() * (hit["position"] - bot.global_position)).x
+			var zone: String = "ГОЛОВА" if rel > 1.42 else ("НОГА" if rel < 0.72 else ("РУКА" if absf(bx) > 0.27 else "ТЕЛО"))
+			var dist: float = cam.global_position.distance_to(hit["position"])
+			var dmg: float = def["dmg"] * (1.9 if zone == "ГОЛОВА" else 1.0) * clampf(1.0 - dist * 0.0022, 0.62, 1.0)
+			main.hurt_bot(bot, dmg, "player", def["name"])
+			main.fx.blood(hit["position"])
+			main.audio.play("headshot" if zone == "ГОЛОВА" else "hit")
+			main.hud.hitzone(zone)
+			hits += 1
 		else:
-			main.fx.tracer(muzzle, hit["position"])
-			var collider: Object = hit["collider"]
-			if collider is BotBody and (collider as BotBody).team != team:
-				var bot: = collider as BotBody
-				var rel: float = hit["position"].y - bot.global_position.y
-				var bx: float = (bot.global_transform.basis.inverse() * (hit["position"] - bot.global_position)).x
-				var zone: String = "ГОЛОВА" if rel > 1.42 else ("НОГА" if rel < 0.72 else ("РУКА" if absf(bx) > 0.27 else "ТЕЛО"))
-				var dmg: float = def["dmg"] * (1.9 if zone == "ГОЛОВА" else 1.0)
-				main.hurt_bot(bot, dmg, "player", def["name"])
-				main.fx.blood(hit["position"])
-				main.audio.play("headshot" if zone == "ГОЛОВА" else "hit")
-				main.hud.hitzone(zone)
-				hits += 1
-			else:
-				main.fx.dust(hit["position"])
+			main.fx.dust(hit["position"])
 	main.hud.hitmarker(hits > 0)
-	main.hud.set_ammo(w["mag"], w["reserve"], def["name"], def["mode"])
+	main.hud.set_ammo(w["mag"], w["reserve"], def["name"], def["mode"], w["mag"] <= maxi(1, _mag_cap() / 4))
 
 func _spread_dir(spread_deg: float) -> Vector3:
 	var a: = deg_to_rad(spread_deg) * sqrt(randf()) * 0.5
@@ -351,9 +419,9 @@ func die(killer_name: String, weapon: String) -> void :
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func respawn() -> void :
-	var base: Dictionary = World.BASES[team]
-	var px: float = base["x"] + randf_range(-7, 7)
-	var pz: float = base["z"] + (randf_range(-18, -13) if team == "US" else randf_range(13, 18))
+	var sp: Vector3 = main.pick_spawn(team)
+	var px: float = sp.x
+	var pz: float = sp.z
 	print("RESPAWN th=", snappedf(World.terrain_h(px, pz), 0.1), " gy=", snappedf(main.ground_y(px, pz), 0.1))
 	global_position = Vector3(px, main.ground_y(px, pz) + 1.0, pz)
 	velocity = Vector3.ZERO
@@ -364,10 +432,14 @@ func respawn() -> void :
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	heal_t = 0.0
 	bandages = 5
+	grenades = Guns.GRENADE["count"]
+	bloom = 0.0
+	main.hud.set_grenades(grenades)
+	main.hud.set_lowhp(false)
 	for w2 in weapons:
 		var d2: Dictionary = Guns.WPN[w2["key"]]
 		w2["mag"] = d2["mag"] + (15 if attachs.get(w2["key"], {}).get("ext", false) else 0)
 		w2["reserve"] = d2["reserve"]
 	var w: Dictionary = weapons[w_idx]
 	main.hud.hide_death()
-	main.hud.set_ammo(w["mag"], w["reserve"], _def()["name"], _def()["mode"])
+	main.hud.set_ammo(w["mag"], w["reserve"], _def()["name"], _def()["mode"], false)

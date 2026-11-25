@@ -2,13 +2,15 @@ class_name Guns
 
 
 const WPN: = {
-	"ak74": {"name": "АК-74", "len": 0.92, "auto": true, "rpm": 600, "dmg": 34, "mag": 30, "reserve": 120, "reload": 2.3, "s_hip": 1.5, "s_ads": 0.3, "ads_fov": 55, "hip_pos": Vector3(0.28, -0.15, -0.48), "ads_pos": Vector3(0, 0.005, -0.44), "kick": 1.0, "scope": false, "scope_fov": 0.0, "mode": "АВТО"}, 
-	"m16": {"name": "М16А4", "len": 1.0, "auto": true, "rpm": 660, "dmg": 32, "mag": 30, "reserve": 120, "reload": 2.2, "s_hip": 1.4, "s_ads": 0.28, "ads_fov": 55, "hip_pos": Vector3(0.14, -0.068, -0.55), "ads_pos": Vector3(0, -0.066, -0.46), "kick": 0.9, "scope": false, "scope_fov": 0.0, "mode": "АВТО"}, 
-	"svd": {"name": "СВД ДРАГУНОВА", "len": 1.22, "auto": false, "rpm": 90, "dmg": 105, "mag": 10, "reserve": 40, "reload": 2.8, "s_hip": 1.9, "s_ads": 0.1, "ads_fov": 18, "hip_pos": Vector3(0.133, -0.088, -0.85), "ads_pos": Vector3(0, -0.16, -0.46), "kick": 1.8, "scope": true, "scope_fov": 18.0, "mode": "ОДИНОЧНЫЙ"}, 
-	"m82": {"name": "M82A1 BARRETT", "len": 1.45, "auto": false, "rpm": 45, "dmg": 150, "mag": 10, "reserve": 30, "reload": 3.4, "s_hip": 2.3, "s_ads": 0.08, "ads_fov": 10, "hip_pos": Vector3(0.136, -0.089, -0.9), "ads_pos": Vector3(0, -0.155, -0.5), "kick": 2.6, "scope": true, "scope_fov": 10.0, "mode": "ОДИНОЧНЫЙ"}, 
-	"makarov": {"name": "ПМ «МАКАРОВ»", "len": 0.3, "auto": false, "rpm": 300, "dmg": 30, "mag": 8, "reserve": 40, "reload": 1.8, "s_hip": 1.2, "s_ads": 0.4, "ads_fov": 62, "hip_pos": Vector3(0.19, -0.17, -0.38), "ads_pos": Vector3(0, -0.022, -0.36), "kick": 0.6, "scope": false, "scope_fov": 0.0, "mode": "ОДИНОЧНЫЙ"}, 
-	"deagle": {"name": "DESERT EAGLE .50", "len": 0.36, "auto": false, "rpm": 200, "dmg": 56, "mag": 7, "reserve": 35, "reload": 2.0, "s_hip": 1.5, "s_ads": 0.45, "ads_fov": 62, "hip_pos": Vector3(0.19, -0.17, -0.4), "ads_pos": Vector3(0, -0.029, -0.38), "kick": 1.4, "scope": false, "scope_fov": 0.0, "mode": "ОДИНОЧНЫЙ"}, 
+	"ak74": {"name": "АК-74", "len": 0.92, "auto": true, "rpm": 600, "dmg": 34, "mag": 30, "reserve": 120, "reload": 2.3, "s_hip": 1.5, "s_ads": 0.3, "ads_fov": 55, "hip_pos": Vector3(0.28, -0.15, -0.48), "ads_pos": Vector3(0, 0.005, -0.44), "kick": 1.0, "bloom": 0.09, "bloom_max": 1.1, "scope": false, "scope_fov": 0.0, "mode": "АВТО"},
+	"m16": {"name": "М16А4", "len": 1.0, "auto": true, "rpm": 660, "dmg": 32, "mag": 30, "reserve": 120, "reload": 2.2, "s_hip": 1.4, "s_ads": 0.28, "ads_fov": 55, "hip_pos": Vector3(0.14, -0.068, -0.55), "ads_pos": Vector3(0, -0.066, -0.46), "kick": 0.9, "bloom": 0.08, "bloom_max": 1.0, "scope": false, "scope_fov": 0.0, "mode": "АВТО"},
+	"svd": {"name": "СВД ДРАГУНОВА", "len": 1.22, "auto": false, "rpm": 90, "dmg": 105, "mag": 10, "reserve": 40, "reload": 2.8, "s_hip": 1.9, "s_ads": 0.1, "ads_fov": 18, "hip_pos": Vector3(0.133, -0.088, -0.85), "ads_pos": Vector3(0, -0.16, -0.46), "kick": 1.8, "bloom": 0.35, "bloom_max": 0.7, "scope": true, "scope_fov": 18.0, "mode": "ОДИНОЧНЫЙ"},
+	"m82": {"name": "M82A1 BARRETT", "len": 1.45, "auto": false, "rpm": 45, "dmg": 150, "mag": 10, "reserve": 30, "reload": 3.4, "s_hip": 2.3, "s_ads": 0.08, "ads_fov": 10, "hip_pos": Vector3(0.136, -0.089, -0.9), "ads_pos": Vector3(0, -0.155, -0.5), "kick": 2.6, "bloom": 0.5, "bloom_max": 1.0, "scope": true, "scope_fov": 10.0, "mode": "ОДИНОЧНЫЙ"},
+	"makarov": {"name": "ПМ «МАКАРОВ»", "len": 0.3, "auto": false, "rpm": 300, "dmg": 30, "mag": 8, "reserve": 40, "reload": 1.8, "s_hip": 1.2, "s_ads": 0.4, "ads_fov": 62, "hip_pos": Vector3(0.19, -0.17, -0.38), "ads_pos": Vector3(0, -0.022, -0.36), "kick": 0.6, "bloom": 0.12, "bloom_max": 0.9, "scope": false, "scope_fov": 0.0, "mode": "ОДИНОЧНЫЙ"},
+	"deagle": {"name": "DESERT EAGLE .50", "len": 0.36, "auto": false, "rpm": 200, "dmg": 56, "mag": 7, "reserve": 35, "reload": 2.0, "s_hip": 1.5, "s_ads": 0.45, "ads_fov": 62, "hip_pos": Vector3(0.19, -0.17, -0.4), "ads_pos": Vector3(0, -0.029, -0.38), "kick": 1.4, "bloom": 0.2, "bloom_max": 1.2, "scope": false, "scope_fov": 0.0, "mode": "ОДИНОЧНЫЙ"},
 }
+
+const GRENADE: = {"dmg": 160.0, "radius": 7.5, "fuse": 2.8, "vel": 15.5, "count": 2, "self_dmg": 0.45}
 
 const CLASSES: = {
 	"RU": {"assault": ["ak74", "makarov"], "sniper": ["svd", "makarov"]}, 

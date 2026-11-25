@@ -138,14 +138,75 @@ func _free_puff() -> CPUParticles3D:
 func blood(pos: Vector3) -> void :
 	var p: = _free_puff()
 	(p.mesh as QuadMesh).material.albedo_color = Color(0.5, 0.06, 0.04)
+	p.initial_velocity_min = 1.5
+	p.initial_velocity_max = 3.0
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.6
 	p.global_position = pos
 	p.restart()
 
 func dust(pos: Vector3) -> void :
 	var p: = _free_puff()
 	(p.mesh as QuadMesh).material.albedo_color = Color(0.55, 0.5, 0.4)
+	p.initial_velocity_min = 1.5
+	p.initial_velocity_max = 3.0
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.6
 	p.global_position = pos
 	p.restart()
+
+
+var _rings: Array[MeshInstance3D] = []
+var _ring_t: Array[float] = []
+const RING_POOL: = 4
+
+func _init_rings() -> void :
+	var tm: = TorusMesh.new()
+	tm.inner_radius = 0.82
+	tm.outer_radius = 1.0
+	for i in RING_POOL:
+		var mi: = MeshInstance3D.new()
+		mi.mesh = tm
+		var m: = StandardMaterial3D.new()
+		m.albedo_color = Color(1.0, 0.75, 0.4, 0.7)
+		m.emission_enabled = true
+		m.emission = Color(1.0, 0.6, 0.25)
+		m.emission_energy_multiplier = 3.0
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
+		mi.material_override = m
+		mi.visible = false
+		_root.add_child(mi)
+		_rings.append(mi)
+		_ring_t.append(0.0)
+
+func explosion(pos: Vector3) -> void :
+	if _rings.is_empty():
+		_init_rings()
+	flash(pos, 6.0, true)
+	for k in 3:
+		var p: = _free_puff()
+		(p.mesh as QuadMesh).material.albedo_color = [Color(0.85, 0.5, 0.2), Color(0.35, 0.32, 0.3), Color(0.5, 0.45, 0.4)][k]
+		p.global_position = pos + Vector3(randf_range( - 0.6, 0.6), randf_range(0, 0.9), randf_range( - 0.6, 0.6))
+		p.initial_velocity_min = 4.0
+		p.initial_velocity_max = 9.0
+		p.scale_amount_min = 2.0
+		p.scale_amount_max = 4.5
+		p.restart()
+	var slot: = 0
+	for i in _rings.size():
+		if _ring_t[i] <= 0.0:
+			slot = i
+			break
+	var mi: = _rings[slot]
+	mi.position = pos
+	mi.scale = Vector3.ONE * 0.4
+	mi.rotation.x = PI / 2.0
+	mi.visible = true
+	_ring_t[slot] = 0.45
+	var m0: = mi.material_override as StandardMaterial3D
+	m0.albedo_color.a = 0.7
 
 func tick(dt: float) -> void :
 	for i in _flash_meshes.size():
@@ -157,6 +218,14 @@ func tick(dt: float) -> void :
 		_flash_light_t -= dt
 		if _flash_light_t <= 0.0:
 			_flash_light.visible = false
+	for i in _rings.size():
+		if _ring_t[i] > 0.0:
+			_ring_t[i] -= dt
+			var t: = 1.0 - _ring_t[i] / 0.45
+			_rings[i].scale = Vector3.ONE * (0.4 + t * 6.0)
+			(_rings[i].material_override as StandardMaterial3D).albedo_color.a = 0.7 * (1.0 - t)
+			if _ring_t[i] <= 0.0:
+				_rings[i].visible = false
 	for i in _tracers.size():
 		if _tracer_t[i] > 0.0:
 			_tracer_t[i] -= dt

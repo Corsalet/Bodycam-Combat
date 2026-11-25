@@ -94,6 +94,21 @@ var hz_t: = 0.0
 var dot_ret: ColorRect
 var dot_ring: ColorRect
 var main: Node
+var xh: Control
+var xh_visible: = false
+var xh_gap: = 10.0
+var vignette: ColorRect
+var vign_a: = 0.0
+var lowhp: = false
+var dmg_layer: Control
+var dmg_entries: Array = []
+var cap_label: Label
+var cap_bg: ColorRect
+var cap_fill: ColorRect
+var gren_label: Label
+var sc_root: Control
+var sc_lists: = {}
+var sc_t: = 0.0
 
 func _build_game_hud() -> void :
 	hud_game = Control.new()
@@ -127,7 +142,7 @@ func _build_game_hud() -> void :
 	feed_box.size = Vector2(600, 200)
 	hud_game.add_child(feed_box)
 	hint_label = _label("ЦЕЛЬ: ЗАХВАТИТЬ И УДЕРЖИВАТЬ ТОЧКИ А·В·С", 13, Color(0.85, 0.82, 0.75), Vector2(640, 630), true, hud_game)
-	_corner_panel(Vector2(14, 622), Vector2(210, 82))
+	_corner_panel(Vector2(14, 622), Vector2(210, 96))
 	health_label = _label("100", 22, Color(0.92, 0.9, 0.85), Vector2(26, 628), false, hud_game)
 	health_bar = ColorRect.new()
 	health_bar.color = Color(0.55, 0.75, 0.4)
@@ -159,6 +174,7 @@ func _build_game_hud() -> void :
 	hud_game.add_child(dot_ret)
 	_build_shop()
 	band_label = _label("БИНТЫ [3] ×5", 12, Color(0.75, 0.73, 0.68), Vector2(26, 678), false, hud_game)
+	gren_label = _label("ГРАНАТЫ [G] ×2", 12, Color(0.75, 0.73, 0.68), Vector2(26, 692), false, hud_game)
 	_corner_panel(Vector2(1056, 622), Vector2(210, 82))
 	wname_label = _label("АК-74", 13, Color(0.85, 0.82, 0.75), Vector2(1068, 628), false, hud_game)
 	ammo_label = _label("30 / 120", 26, Color(0.92, 0.9, 0.85), Vector2(1068, 646), false, hud_game)
@@ -168,6 +184,36 @@ func _build_game_hud() -> void :
 	hit_label.visible = false
 	switch_label = _label("", 15, Color(0.9, 0.85, 0.6), Vector2(640, 560), true, hud_game)
 	switch_label.visible = false
+	xh = Control.new()
+	xh.set_anchors_preset(Control.PRESET_FULL_RECT)
+	xh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xh.draw.connect(_draw_xh)
+	hud_game.add_child(xh)
+	cap_label = _label("", 12, Color(0.95, 0.9, 0.7), Vector2(640, 418), true, hud_game)
+	cap_label.visible = false
+	cap_bg = ColorRect.new()
+	cap_bg.color = Color(0, 0, 0, 0.6)
+	cap_bg.position = Vector2(560, 440)
+	cap_bg.size = Vector2(160, 6)
+	cap_bg.visible = false
+	hud_game.add_child(cap_bg)
+	cap_fill = ColorRect.new()
+	cap_fill.color = Color(0.95, 0.8, 0.3, 0.9)
+	cap_fill.position = Vector2(560, 440)
+	cap_fill.size = Vector2(0, 6)
+	cap_fill.visible = false
+	hud_game.add_child(cap_fill)
+	vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.color = Color(0.7, 0.05, 0.03, 0.0)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_game.add_child(vignette)
+	dmg_layer = Control.new()
+	dmg_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dmg_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dmg_layer.draw.connect(_draw_dmg)
+	hud_game.add_child(dmg_layer)
+	_build_scoreboard()
 	scope_overlay = _overlay_base()
 	scope_overlay.color = Color(0, 0, 0, 0)
 	scope_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -180,11 +226,37 @@ func _build_game_hud() -> void :
 	scope_overlay.draw.connect(_draw_scope)
 
 func _process(dt: float) -> void :
+	if xh:
+		xh.queue_redraw()
 	if hz_t > 0.0:
 		hz_t -= dt
 		hz_label.modulate.a = clampf(hz_t / 0.9, 0.0, 1.0)
 		if hz_t <= 0.0:
 			hz_label.visible = false
+	if vignette:
+		var target_a: = vign_a
+		if lowhp:
+			target_a = maxf(target_a, 0.24 + 0.08 * sin(Time.get_ticks_msec() / 1000.0 * 4.0))
+		vignette.color.a = lerpf(vignette.color.a, target_a, minf(1.0, 8.0 * dt))
+		vign_a = maxf(0.0, vign_a - dt * 1.4)
+	if dmg_entries.size() > 0:
+		for i in range(dmg_entries.size() - 1, -1, -1):
+			dmg_entries[i]["t"] = float(dmg_entries[i]["t"]) - dt
+			if float(dmg_entries[i]["t"]) <= 0.0:
+				dmg_entries.remove_at(i)
+		dmg_layer.queue_redraw()
+	if sc_root != null and main and main.state == "play":
+		var tab: = Input.is_key_pressed(KEY_TAB)
+		if tab and not sc_root.visible:
+			sc_root.visible = true
+			sc_t = 0.0
+		elif not tab and sc_root.visible:
+			sc_root.visible = false
+		if sc_root.visible:
+			sc_t -= dt
+			if sc_t <= 0.0:
+				sc_t = 0.5
+				_refresh_scoreboard()
 	_process_rest(dt)
 func _process_rest(dt: float) -> void :
 	var grain: ColorRect = root_ctrl.get_node("grain")
@@ -216,6 +288,117 @@ func _draw_scope() -> void :
 		c.draw_circle(Vector2(cx + off, cy), 1.8, Color(0, 0, 0, 1))
 		c.draw_circle(Vector2(cx - off, cy), 1.8, Color(0, 0, 0, 1))
 		c.draw_circle(Vector2(cx, cy + off), 1.8, Color(0, 0, 0, 1))
+
+func _draw_xh() -> void :
+	if not xh_visible:
+		return
+	var c: = xh
+	var s: = c.size
+	var cx: = s.x / 2
+	var cy: = s.y / 2
+	var gap: = clampf(xh_gap, 6.0, 44.0)
+	var ln: = 7.0
+	var col: = Color(0.95, 0.93, 0.85, 0.9)
+	c.draw_line(Vector2(cx - gap - ln, cy), Vector2(cx - gap, cy), col, 2.0)
+	c.draw_line(Vector2(cx + gap, cy), Vector2(cx + gap + ln, cy), col, 2.0)
+	c.draw_line(Vector2(cx, cy - gap - ln), Vector2(cx, cy - gap), col, 2.0)
+	c.draw_line(Vector2(cx, cy + gap), Vector2(cx, cy + gap + ln), col, 2.0)
+	c.draw_rect(Rect2(cx - 1, cy - 1, 2, 2), Color(0.95, 0.93, 0.85, 0.75))
+
+func _draw_dmg() -> void :
+	var c: = dmg_layer
+	var s: = c.size
+	var cc: = Vector2(s.x / 2, s.y / 2)
+	for e in dmg_entries:
+		var a: = clampf(float(e["t"]) / 1.2, 0.0, 1.0)
+		var ang: = - PI / 2.0 + float(e["ang"])
+		c.draw_arc(cc, 130.0, ang - 0.45, ang + 0.45, 20, Color(0.95, 0.15, 0.08, 0.85 * a), 12.0)
+
+func set_crosshair(vis: bool, gap: float) -> void :
+	xh_visible = vis
+	xh_gap = gap
+
+func set_lowhp(b: bool) -> void :
+	lowhp = b
+
+func hurt_flash() -> void :
+	vign_a = 0.5
+
+func show_dmg_dir(rel: float) -> void :
+	dmg_entries.append({"ang": rel, "t": 1.2})
+	if dmg_entries.size() > 4:
+		dmg_entries.remove_at(0)
+	dmg_layer.queue_redraw()
+
+func set_grenades(n: int) -> void :
+	gren_label.text = "ГРАНАТЫ [G] ×" + str(n)
+
+func set_capture(txt: String, frac: float) -> void :
+	if txt == "":
+		cap_label.visible = false
+		cap_bg.visible = false
+		cap_fill.visible = false
+		return
+	cap_label.visible = true
+	cap_label.text = txt
+	cap_bg.visible = true
+	cap_fill.visible = frac > 0.0
+	cap_fill.size.x = 160.0 * clampf(frac, 0.0, 1.0)
+
+func _build_scoreboard() -> void :
+	sc_root = ColorRect.new()
+	sc_root.color = Color(0.02, 0.025, 0.02, 0.9)
+	sc_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sc_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sc_root.visible = false
+	hud_game.add_child(sc_root)
+	var pc: = PanelContainer.new()
+	pc.set_anchors_preset(Control.PRESET_CENTER)
+	pc.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	pc.grow_vertical = Control.GROW_DIRECTION_BOTH
+	pc.custom_minimum_size = Vector2(560, 320)
+	pc.add_theme_stylebox_override("panel", _style(Color(0.04, 0.05, 0.04, 0.97), Color(1, 1, 1, 0.25), 14.0, 22.0))
+	sc_root.add_child(pc)
+	var vb: = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 6)
+	pc.add_child(vb)
+	var title: = Label.new()
+	title.text = "ОПЕРАЦИЯ «ПЕРЕВАЛ» — СЧЁТ"
+	title.add_theme_font_override("font", _bold)
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", COL_AMBER)
+	vb.add_child(title)
+	for t in ["RU", "US"]:
+		var h: = Label.new()
+		h.text = "РОССИЯ" if t == "RU" else "США"
+		h.add_theme_font_override("font", _bold)
+		h.add_theme_font_size_override("font_size", 12)
+		h.add_theme_color_override("font_color", COL_RU if t == "RU" else COL_US)
+		vb.add_child(h)
+		var lb: = Label.new()
+		lb.add_theme_font_size_override("font_size", 12)
+		lb.add_theme_color_override("font_color", COL_TEXT)
+		vb.add_child(lb)
+		sc_lists[t] = lb
+
+func _refresh_scoreboard() -> void :
+	var rows: = {}
+	for t in ["RU", "US"]:
+		rows[t] = []
+	var pr = main.player
+	if pr != null:
+		rows[pr.team].append({"n": "ВЫ", "k": pr.kills, "d": pr.deaths, "me": true})
+	for b in main.bots:
+		if is_instance_valid(b):
+			rows[b.team].append({"n": b.bname, "k": b.kills, "d": b.deaths, "me": false})
+	for t in ["RU", "US"]:
+		var arr: Array = rows[t]
+		arr.sort_custom(func(a, b): return int(a["k"]) > int(b["k"]))
+		var lines: = ""
+		for r in arr:
+			var nm: String = ("▸ " if r["me"] else "") + str(r["n"])
+			lines += nm + " — " + str(r["k"]) + " / " + str(r["d"]) + "\n"
+		(sc_lists[t] as Label).text = lines if lines != "" else "—"
 
 
 
@@ -465,7 +648,7 @@ func _build_menu() -> void :
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 1)
-	for pair in [["W A S D", "движение"], ["SHIFT", "спринт"], ["ЛКМ", "огонь"], ["ПКМ", "прицел / оптика"], ["R", "перезарядка"], ["1 / 2", "смена оружия"], ["ESC", "пауза"]]:
+	for pair in [["W A S D", "движение"], ["SHIFT", "спринт"], ["CTRL / C", "присед"], ["ЛКМ", "огонь"], ["ПКМ", "прицел / оптика"], ["R", "перезарядка"], ["1 / 2", "смена оружия"], ["G", "граната"], ["3", "бинт"], ["TAB", "таблица счёта"], ["B", "магазин обвесов"], ["ESC", "пауза"]]:
 		var b: = Label.new()
 		b.text = pair[0]
 		b.add_theme_font_override("font", _bold)
@@ -489,7 +672,7 @@ func _build_menu() -> void :
 	var foot: = HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 10)
 	var f1: = Label.new()
-	f1.text = "BUILD 23 • v0.4.8 G1  КАРТА «ПЕРЕВАЛ-9»"
+	f1.text = "BUILD 24 • v0.5.0 G1  КАРТА «ПЕРЕВАЛ-9»"
 	f1.add_theme_font_size_override("font_size", 10)
 	f1.add_theme_color_override("font_color", COL_FOOT)
 	foot.add_child(f1)
@@ -694,9 +877,10 @@ func set_health(hp: float, bandages: int) -> void :
 	health_bar.size.x = 150.0 * hp / 100.0
 	band_label.text = "БИНТЫ [3] ×" + str(bandages)
 
-func set_ammo(mag: int, reserve: int, wname: String, mode: String) -> void :
+func set_ammo(mag: int, reserve: int, wname: String, mode: String, low: = false) -> void :
 	ammo_label.text = str(mag) + " / " + str(reserve)
 	wname_label.text = wname + " • " + mode
+	ammo_label.add_theme_color_override("font_color", COL_RED if low else Color(0.92, 0.9, 0.85))
 
 func _build_shop() -> void :
 	shop_panel = ColorRect.new()

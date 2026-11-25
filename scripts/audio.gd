@@ -6,7 +6,7 @@ const RATE: = 22050
 var _pool: Array[AudioStreamPlayer] = []
 var _lib: = {}
 
-const _FORCE: = ["hurt", "death", "kill", "headshot", "hit", "dry", "reload"]
+const _FORCE: = ["hurt", "death", "kill", "headshot", "hit", "dry", "reload", "pin", "switch", "explode"]
 static var _last_whiz_ms: = 0
 
 func _init() -> void :
@@ -111,6 +111,11 @@ func _build_lib() -> void :
 	_lib["cap_done"] = _to_wav(_mix(_tone_pcm(0.1, 520.0, 520.0, 0.14), _tone_pcm(0.14, 780.0, 780.0, 0.14)))
 	_lib["lost"] = _to_wav(_tone_pcm(0.12, 400.0, 260.0, 0.12))
 	_lib["death"] = _to_wav(_mix(_noise_pcm(0.7, [0.4, 0.001, 0.6], 300.0, 1.0), _tone_pcm(0.5, 160.0, 60.0, 0.2)))
+	_lib["explode"] = _to_wav(_mix(_noise_pcm(0.9, [0.08, 0.7, 0.12], 240.0, 1.0), _tone_pcm(0.6, 70.0, 22.0, 0.6)))
+	_lib["pin"] = _to_wav(_mix(_tone_pcm(0.03, 1400.0, 1200.0, 0.09), _tone_pcm(0.04, 800.0, 700.0, 0.06)))
+	_lib["step"] = _to_wav(_noise_pcm(0.05, [0.01, 0.035, 0.01], 480.0, 0.3))
+	_lib["step_r"] = _to_wav(_noise_pcm(0.06, [0.01, 0.04, 0.015], 380.0, 0.34))
+	_lib["switch"] = _to_wav(_mix(_noise_pcm(0.05, [0.01, 0.03, 0.01], 1600.0, 0.35), _tone_pcm(0.03, 500.0, 380.0, 0.05)))
 
 func play(name: String, vol_db: = 0.0, pitch: = 1.0) -> void :
 	if not _lib.has(name):

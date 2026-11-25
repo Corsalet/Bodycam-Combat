@@ -23,6 +23,8 @@ var detour_t: = 0.0
 var detour_to: Vector3 = Vector3.ZERO
 var stuck_t: = 0.0
 var _stuck_pos: Vector3 = Vector3.ZERO
+var last_seen: Vector3 = Vector3.ZERO
+var alert_t: = 0.0
 var anim_t: = 0.0
 var parts: Dictionary = {}
 var gun: Node3D
@@ -156,6 +158,7 @@ func _physics_process(dt: float) -> void :
 		return
 	react_t = maxf(0.0, react_t - dt)
 	detour_t = maxf(0.0, detour_t - dt)
+	alert_t = maxf(0.0, alert_t - dt)
 	if enemy != null and ( not is_instance_valid(enemy) or not enemy.get("alive")):
 		enemy = null
 		burst = 0
@@ -173,7 +176,7 @@ func _physics_process(dt: float) -> void :
 			moving = true
 		_shoot(dt)
 	elif not frozen and parts.has("goal"):
-		var goal: Vector3 = reinforce_to if reinforcing else parts["goal"]
+		var goal: Vector3 = reinforce_to if reinforcing else (last_seen if alert_t > 0.0 else parts["goal"])
 		if detour_t > 0.0:
 			goal = detour_to
 		var to: = goal - global_position
@@ -228,13 +231,14 @@ func _physics_process(dt: float) -> void :
 
 func _think() -> void :
 
+	var had_enemy: = enemy != null
 	var best: Node3D = null
 	var best_d: = 95.0
 	enemy_is_player = false
 	var pc: PlayerBody = main.player
 	if pc.alive and pc.team != team:
 		var d: float = Vector2(pc.global_position.x - global_position.x, pc.global_position.z - global_position.z).length()
-		if d < best_d and _los(pc.global_position + Vector3(0, 1.3, 0)):
+		if d < best_d and _los(pc.global_position + Vector3(0, 1.3, 0)) and (enemy != null or _can_see(pc)):
 			best = pc
 			best_d = d
 			enemy_is_player = true
@@ -242,14 +246,40 @@ func _think() -> void :
 		if b == self or not b.alive or b.team == team:
 			continue
 		var d: float = Vector2(b.global_position.x - global_position.x, b.global_position.z - global_position.z).length()
-		if d < best_d and _los(b.global_position + Vector3(0, 1.2, 0)):
+		if d < best_d and _los(b.global_position + Vector3(0, 1.2, 0)) and (enemy != null or _can_see(b)):
 			best = b
 			best_d = d
 			enemy_is_player = false
 	enemy = best
-	if enemy != null and enemy.get_instance_id() != _last_enemy_id:
-		_last_enemy_id = enemy.get_instance_id()
-		react_t = randf_range(0.5, 1.1)
+	if enemy != null:
+		last_seen = enemy.global_position
+		alert_t = 0.0
+		if enemy.get_instance_id() != _last_enemy_id:
+			_last_enemy_id = enemy.get_instance_id()
+			react_t = randf_range(0.5, 1.1)
+	elif had_enemy:
+		alert_t = randf_range(3.0, 5.5)
+		_last_enemy_id = 0
+
+func _can_see(t: Node3D) -> bool:
+	var to: = t.global_position - global_position
+	to.y = 0
+	if to.length() < 7.0:
+		return true
+	var f: = Vector3( - sin(rotation.y), 0, - cos(rotation.y))
+	if f.length() < 0.1:
+		return true
+	return f.dot(to.normalized()) > 0.42
+
+func alert(pos: Vector3, radius: float) -> void :
+	if not alive or enemy != null or alert_t > 0.0:
+		return
+	var d: float = Vector2(pos.x - global_position.x, pos.z - global_position.z).length()
+	if d > radius:
+		return
+	last_seen = pos + Vector3(randf_range( - 4, 4), 0, randf_range( - 4, 4))
+	alert_t = randf_range(3.5, 6.0)
+	react_t = maxf(react_t, 0.4)
 
 func _los(target: Vector3) -> bool:
 	var from: = global_position + Vector3(0, 1.5, 0)
@@ -319,6 +349,8 @@ func _shoot(dt: float) -> void :
 			moving_f = 0.6
 		elif (main.player.velocity as Vector3).length() > 1.5:
 			moving_f = 0.78
+		if main.player.crouch:
+			moving_f *= 0.82
 	var scope_f: = 0.55 if _def()["scope"] else 1.0
 	var hit_chance: float = clampf(0.17 - dist * 0.0022, 0.03, 0.17) * moving_f * scope_f
 	if main.test_mode:
