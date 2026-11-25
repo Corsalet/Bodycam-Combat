@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://c4moui5s1w8e8"
+path="res://.godot/imported/soldier_15.png-3d7cfbbf8716c93d69669e210a9aa944.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "66480d604e2e198f52e0b226c6221dd1"
+}
+
+[deps]
+
+source_file="res://assets/soldier_15.png"
+dest_files=["res://.godot/imported/soldier_15.png-3d7cfbbf8716c93d69669e210a9aa944.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=1.0
+compress/hdr_compression=0
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=false
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://dc6kb604sd3jf"
+path="res://.godot/imported/ruins_0.png-950aa3571f92a7b262b3b32b0422eb37.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "bb949eb2e763316e1b34683b85753242"
+}
+
+[deps]
+
+source_file="res://assets/ruins_0.png"
+dest_files=["res://.godot/imported/ruins_0.png-950aa3571f92a7b262b3b32b0422eb37.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=1.0
+compress/hdr_compression=0
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=10
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=false
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0
