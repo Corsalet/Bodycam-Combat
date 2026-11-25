@@ -29,6 +29,7 @@ var vm_gun: Node3D
 var on_ground: = true
 var _settled: = false
 var motion_grace: = 0.0
+var spawn_prot: = 0.0
 var _lmb_prev: = false
 var money: = 300
 var attachs: = {}
@@ -109,8 +110,9 @@ func _unhandled_input(event: InputEvent) -> void :
 		if motion_grace > 0.0:
 			return
 		var e: = event as InputEventMouseMotion
-		yaw -= e.relative.x * 0.0021 * main.mouse_sens
-		pitch -= e.relative.y * 0.0021 * main.mouse_sens
+		var ss: float = clampf(cam.fov / 75.0, 0.22, 1.0)
+		yaw -= e.relative.x * 0.0021 * main.mouse_sens * ss
+		pitch -= e.relative.y * 0.0021 * main.mouse_sens * ss
 		pitch = clampf(pitch, -1.45, 1.45)
 	elif event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -203,6 +205,7 @@ func _physics_process(dt: float) -> void :
 	velocity.y -= 13.0 * dt
 	if Input.is_physical_key_pressed(KEY_SPACE) and is_on_floor():
 		velocity.y = 4.6
+	spawn_prot = maxf(0.0, spawn_prot - dt)
 	ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and reload_t <= 0.0
 	if Input.is_physical_key_pressed(KEY_R) and reload_t <= 0.0:
 		var w: Dictionary = weapons[w_idx]
@@ -293,7 +296,7 @@ func _fire(def: Dictionary) -> void :
 	main.audio.play(weapons[w_idx]["key"], -10.0 if _att("sup") else 0.0)
 	var spread_deg: float = (def["s_ads"] if ads else def["s_hip"]) + recoil * 0.25
 	recoil += def["kick"]
-	pitch += def["kick"] * 0.01
+	pitch += def["kick"] * 0.008
 	var muzzle: = vm_gun.global_position + vm_gun.global_transform.basis * Vector3(0, 0, vm_gun.get_meta("muzzle_z"))
 	main.fx.flash(muzzle, def["len"] * (0.4 if _att("sup") else 0.8), true)
 	var hits: = 0
@@ -351,6 +354,7 @@ func respawn() -> void :
 	velocity = Vector3.ZERO
 	hp = 100
 	alive = true
+	spawn_prot = 2.5
 	heal_t = 0.0
 	bandages = 5
 	for w2 in weapons:

@@ -6,8 +6,11 @@ const RATE: = 22050
 var _pool: Array[AudioStreamPlayer] = []
 var _lib: = {}
 
+const _FORCE: = ["hurt", "death", "kill", "headshot", "hit", "dry", "reload"]
+static var _last_whiz_ms: = 0
+
 func _init() -> void :
-	for i in 14:
+	for i in 20:
 		var p: = AudioStreamPlayer.new()
 		p.bus = "Master"
 		p.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -112,6 +115,11 @@ func _build_lib() -> void :
 func play(name: String, vol_db: = 0.0, pitch: = 1.0) -> void :
 	if not _lib.has(name):
 		return
+	if name == "whiz":
+		var now: = Time.get_ticks_msec()
+		if now - _last_whiz_ms < 130:
+			return
+		_last_whiz_ms = now
 	for p in _pool:
 		if not p.playing:
 			p.stream = _lib[name]
@@ -120,10 +128,11 @@ func play(name: String, vol_db: = 0.0, pitch: = 1.0) -> void :
 			p.play()
 			return
 
-	_pool[0].stream = _lib[name]
-	_pool[0].volume_db = vol_db
-	_pool[0].pitch_scale = pitch
-	_pool[0].play()
+	if name in _FORCE:
+		_pool[0].stream = _lib[name]
+		_pool[0].volume_db = vol_db
+		_pool[0].pitch_scale = pitch
+		_pool[0].play()
 
 
 func play_shot(key: String, dist: float) -> void :

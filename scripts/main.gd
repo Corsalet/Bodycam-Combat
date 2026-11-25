@@ -1,7 +1,7 @@
 extends Node3D
 
 
-const VER: = "0.4.4 G2"
+const VER: = "0.4.5 G2"
 
 var state: = "menu"
 var mouse_sens: = 1.0
@@ -287,13 +287,13 @@ func _tick_squads(dt: float) -> void :
 			if s2 == s or s2["team"] != s["team"] or float(s2["combat_t"]) > 0.0:
 				continue
 			var pd: float = Vector2(points[s2["point"]]["x"] - cpos.x, points[s2["point"]]["z"] - cpos.z).length()
-			if pd > 260.0:
+			if pd > 340.0:
 				continue
 			var idle: Array = []
 			for m in s2["members"]:
 				if is_instance_valid(m) and m.alive and m.enemy == null and not m.reinforcing:
 					idle.append(m)
-			var keep: int = 2 if idle.size() >= 4 else 1
+			var keep: int = 2 if idle.size() >= 5 else (1 if idle.size() >= 3 else 0)
 			for si in mini(3, idle.size() - keep):
 				if si < 0:
 					break
@@ -346,6 +346,8 @@ func raycast_hit(from: Vector3, dir: Vector3, max_dist: float, exclude: Node3D) 
 
 func hurt_player(dmg: float, killer_name: String, weapon: String) -> void :
 	if not player.alive or state != "play":
+		return
+	if player.spawn_prot > 0.0:
 		return
 	player.hp -= dmg
 	audio.play("hurt", -4.0)
@@ -591,6 +593,7 @@ func _run_test() -> void :
 			foe = b
 			break
 	var hp0: float = player.hp
+	player.spawn_prot = 0.0
 	if foe:
 
 		for b in bots:
@@ -598,8 +601,15 @@ func _run_test() -> void :
 				b.position = Vector3(190, ground_y(190, -150) + 1.0, -150)
 				b.velocity = Vector3.ZERO
 				b.enemy = null
-		_place_enemy(foe, 25.0)
-		await get_tree().create_timer(3.5).timeout
+		foe.wkey = "ak74"
+		_place_enemy(foe, 14.0)
+		for i in 6:
+			foe.enemy = player
+			foe.enemy_is_player = true
+			foe.react_t = 0.0
+			foe.next_shot = 0.0
+			await get_tree().create_timer(0.6).timeout
+		await get_tree().create_timer(4.0).timeout
 		print("TEST_BOTSHOOT hp=", int(player.hp), " -> ", "BOTSHOOT_OK" if player.hp < hp0 else "BOTSHOOT_FAIL")
 
 		bots.erase(foe)
@@ -674,9 +684,19 @@ func _run_test() -> void :
 			break
 	if eng:
 		player.hp = 100.0
+		var sqp: Dictionary = points[s_us["point"]]
+		player.global_position = Vector3(sqp["x"], ground_y(sqp["x"], sqp["z"]) + 1.0, sqp["z"])
+		player.velocity = Vector3.ZERO
+		player.spawn_prot = 0.0
 		_place_enemy(eng, 20.0)
 		eng.frozen = true
-		await get_tree().create_timer(3.5).timeout
+		eng.enemy = player
+		s_us["combat_t"] = 4.0
+		_tick_squads(1.6)
+		for m2 in s_us["members"]:
+			if is_instance_valid(m2) and m2.alive:
+				m2.enemy = player
+		await get_tree().create_timer(1.8).timeout
 		var sent: = 0
 		for sq in squads:
 			if sq["team"] == "US" and sq != s_us:

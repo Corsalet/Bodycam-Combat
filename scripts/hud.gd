@@ -106,7 +106,7 @@ func _build_game_hud() -> void :
 	hud_game.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud_game.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_ctrl.add_child(hud_game)
-	rec_label = _label("REC TC 00:00 • 0.4.4 G2", 15, Color(0.92, 0.9, 0.85), Vector2(16, 12), false, hud_game)
+	rec_label = _label("REC TC 00:00 • 0.4.5 G2", 15, Color(0.92, 0.9, 0.85), Vector2(16, 12), false, hud_game)
 	var dot: = ColorRect.new()
 	dot.color = Color(0.95, 0.2, 0.15)
 	dot.position = Vector2(6, 18)
@@ -489,7 +489,7 @@ func _build_menu() -> void :
 	var foot: = HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 10)
 	var f1: = Label.new()
-	f1.text = "BUILD 19 • v0.4.4 G2  КАРТА «ПЕРЕВАЛ-9»"
+	f1.text = "BUILD 20 • v0.4.5 G2  КАРТА «ПЕРЕВАЛ-9»"
 	f1.add_theme_font_size_override("font_size", 10)
 	f1.add_theme_color_override("font_color", COL_FOOT)
 	foot.add_child(f1)
@@ -650,7 +650,7 @@ func hide_all_ov() -> void :
 	end_root.visible = false
 
 func set_timecode(tc: String) -> void :
-	rec_label.text = "REC TC " + tc + " • 0.4.4 G2"
+	rec_label.text = "REC TC " + tc + " • 0.4.5 G2"
 
 func set_score(ru: int, us: int, time_s: int) -> void :
 	tk_ru.text = "RU " + str(ru)

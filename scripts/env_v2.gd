@@ -397,7 +397,7 @@ static func upgrade_environment(e: Environment, sun: DirectionalLight3D) -> void
 	e.fog_light_color = Color(0.5, 0.38, 0.3)
 	e.fog_density = 0.0 if web else 0.0042
 	e.fog_sky_affect = 0.3
-	e.glow_enabled = true
+	e.glow_enabled = not web
 	e.glow_intensity = 0.55
 	e.glow_bloom = 0.05
 	e.glow_hdr_threshold = 1.0

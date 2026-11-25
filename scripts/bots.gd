@@ -17,6 +17,8 @@ var next_think: = 0.0
 var next_shot: = 0.0
 var burst: = 0
 var pause_t: = 0.0
+var react_t: = 0.0
+var _last_enemy_id: = 0
 var anim_t: = 0.0
 var parts: Dictionary = {}
 var gun: Node3D
@@ -146,6 +148,7 @@ func _physics_process(dt: float) -> void :
 		if respawn_t <= 0.0:
 			respawn()
 		return
+	react_t = maxf(0.0, react_t - dt)
 	next_think -= dt
 	if next_think <= 0.0:
 		next_think = randf_range(0.3, 0.6)
@@ -217,7 +220,10 @@ func _think() -> void :
 			best = b
 			best_d = d
 			enemy_is_player = false
-	enemy = best
+		enemy = best
+	if enemy != null and enemy.get_instance_id() != _last_enemy_id:
+		_last_enemy_id = enemy.get_instance_id()
+		react_t = randf_range(0.35, 0.85)
 
 func _los(target: Vector3) -> bool:
 	var from: = global_position + Vector3(0, 1.5, 0)
@@ -244,18 +250,18 @@ func _combat_move(dt: float) -> void :
 
 func _shoot(dt: float) -> void :
 	next_shot -= dt
-	if next_shot > 0.0 or pause_t > 0.0:
+	if react_t > 0.0 or next_shot > 0.0 or pause_t > 0.0:
 		if pause_t > 0.0:
 			pause_t -= dt
 		return
 	var e: = enemy
 	var dist: = Vector2(e.global_position.x - global_position.x, e.global_position.z - global_position.z).length()
 	if burst <= 0:
-		burst = randi_range(3, 7)
-	next_shot = 60.0 / 600.0 + randf_range(0, 0.04)
+		burst = 1 if _def()["scope"] else randi_range(2, 5)
+	next_shot = 60.0 / float(_def()["rpm"]) + randf_range(0, 0.05)
 	burst -= 1
 	if burst <= 0:
-		pause_t = randf_range(0.4, 1.1)
+		pause_t = randf_range(0.5, 1.3) if _def()["scope"] else randf_range(0.45, 1.15)
 	var muzzle: = flash_node.global_position
 	main.audio.play_shot(wkey, dist)
 	main.fx.flash(muzzle, _def()["len"] * 0.7)
@@ -263,8 +269,14 @@ func _shoot(dt: float) -> void :
 
 	var q: = PhysicsRayQueryParameters3D.create(global_position + Vector3(0, 1.5, 0), aim, 1)
 	var los_hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
-	var sprint_f: = 0.72 if (enemy_is_player and main.player.sprint) else 1.0
-	var hit_chance: float = clampf(0.4 - dist * 0.0038, 0.07, 0.4) * sprint_f
+	var moving_f: = 1.0
+	if enemy_is_player:
+		if main.player.sprint:
+			moving_f = 0.6
+		elif (main.player.velocity as Vector3).length() > 1.5:
+			moving_f = 0.78
+	var scope_f: = 0.55 if _def()["scope"] else 1.0
+	var hit_chance: float = clampf(0.26 - dist * 0.0028, 0.05, 0.26) * moving_f * scope_f
 	var will_hit: = los_hit.is_empty() and randf() < hit_chance
 	if not will_hit:
 		aim += Vector3(randf_range(-1.2, 1.2), randf_range(-0.5, 0.8), randf_range(-1.2, 1.2))
@@ -272,7 +284,8 @@ func _shoot(dt: float) -> void :
 	var t_end: Vector3 = aim if (los_hit.is_empty() or will_hit) else (los_hit["position"] as Vector3)
 	main.fx.tracer(muzzle, t_end)
 	if will_hit:
-		var dmg: = randf_range(8, 17)
+		var dmg: = randf_range(8, 17) * (2.6 if _def()["scope"] else 1.0)
+		dmg *= clampf(1.0 - dist * 0.002, 0.6, 1.0)
 		if enemy_is_player:
 			main.hurt_player(dmg, bname, _def()["name"])
 		else:
