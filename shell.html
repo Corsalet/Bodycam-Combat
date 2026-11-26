@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>Bodycam Combat</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: #101014;
+	overflow: hidden;
+	touch-action: none;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: #101014;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 14px;
+}
+
+#status.gone {
+	display: none;
+}
+
+#splash {
+	max-height: 46%;
+	max-width: 86%;
+	margin: auto;
+	image-rendering: auto;
+}
+
+#boot-title {
+	font-size: clamp(16px, 3.2vw, 26px);
+	letter-spacing: 0.12em;
+	color: #d8d2c4;
+	text-transform: uppercase;
+}
+
+#boot-sub {
+	font-size: clamp(11px, 1.6vw, 14px);
+	color: #8b877d;
+}
+
+#bar-wrap {
+	width: min(560px, 72vw);
+	height: 10px;
+	background: #26262e;
+	border: 1px solid #3a3a44;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+#bar {
+	width: 0%;
+	height: 100%;
+	background: linear-gradient(90deg, #b8452f, #d98a2b);
+	transition: width 0.2s linear;
+}
+
+#bar-text {
+	font-size: clamp(11px, 1.6vw, 13px);
+	color: #b0aca2;
+}
+
+#status-notice {
+	display: none;
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e8e0e0;
+	line-height: 1.45;
+	max-width: min(680px, 88vw);
+	margin: 0 1rem;
+	overflow: auto;
+	max-height: 60vh;
+	padding: 1rem;
+	text-align: left;
+	white-space: pre-wrap;
+	font-size: clamp(12px, 1.8vw, 15px);
+	z-index: 1;
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+		<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+	</head>
+	<body>
+		<canvas id="canvas">
+			Ваш браузер не поддерживает canvas.
+		</canvas>
+
+		<noscript>
+			Включите JavaScript — без него игра не запускается.
+		</noscript>
+
+		<div id="status">
+			<img id="splash" src="index.png" alt="">
+			<div id="boot-title">BODYCAM // ОПЕРАЦИЯ «ПЕРЕВАЛ»</div>
+			<div id="boot-sub" id2="ver">v0.5.1 — первая загрузка ~35 МБ, дальше стартует из кеша</div>
+			<div id="bar-wrap"><div id="bar"></div></div>
+			<div id="bar-text">Подготовка…</div>
+			<div id="status-notice"></div>
+		</div>
+
+		<script>
+window.__bootFail = function (msg) {
+	var st = document.getElementById('status');
+	var n = document.getElementById('status-notice');
+	if (!n) { return; }
+	n.textContent = 'ОШИБКА ЗАПУСКА\n' + msg;
+	n.style.display = 'block';
+	document.getElementById('bar-wrap').style.display = 'none';
+	document.getElementById('bar-text').style.display = 'none';
+};
+window.addEventListener('error', function (e) {
+	window.__bootFail((e.message || 'неизвестная ошибка') + (e.lineno ? ('\nфайл: ' + (e.filename || '') + ':' + e.lineno) : ''));
+});
+window.addEventListener('unhandledrejection', function (e) {
+	var r = e.reason;
+	window.__bootFail('Асинхронная ошибка: ' + ((r && (r.message || r)) || 'неизвестно'));
+});
+		</script>
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const bar = document.getElementById('bar');
+	const barText = document.getElementById('bar-text');
+
+	function fail(msg) {
+		window.__bootFail(msg);
+	}
+
+	function mb(bytes) {
+		return (bytes / (1024 * 1024)).toFixed(1);
+	}
+
+	// Проверка WebGL2 до старта движка — иначе был бы чёрный экран без объяснений.
+	try {
+		var probe = document.createElement('canvas');
+		var gl = probe.getContext('webgl2');
+		if (!gl) {
+			fail('Браузер не выдал контекст WebGL2 — рендерить нечем.\n\nЧто делать:\n1) В Chrome откройте chrome://settings → «Система» → включите «Использовать аппаратное ускорение» и перезапустите браузер.\n2) Закройте то, что занимает GPU (эмуляторы, игры, захват видео).\n3) Обновите драйвер видеокарты.\n4) Если включена блокировка JS/рекламы — отключите для этого сайта.');
+			return;
+		}
+		try { probe.width = 2; probe.height = 2; gl.getError(); } catch (e) {}
+	} catch (e) {
+		fail('Проверка WebGL2 упала: ' + (e && e.message ? e.message : e));
+		return;
+	}
+
+	setStatusProgressPlaceholder();
+
+	function setStatusProgressPlaceholder() {
+		bar.style.width = '2%';
+		barText.textContent = 'Соединение…';
+	}
+
+	engine.startGame({
+		'onProgress': function (current, total) {
+			if (current > 0 && total > 0) {
+				var p = Math.min(100, Math.round(current / total * 100));
+				bar.style.width = p + '%';
+				barText.textContent = 'Загрузка ' + p + '% — ' + mb(current) + ' / ' + mb(total) + ' МБ';
+			} else {
+				barText.textContent = 'Загрузка…';
+			}
+		},
+	}).then(function () {
+		statusOverlay.classList.add('gone');
+	}, fail);
+}());
+		</script>
+	</body>
+</html>
