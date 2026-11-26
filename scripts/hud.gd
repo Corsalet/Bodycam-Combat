@@ -28,6 +28,8 @@ var band_label: Label
 var ammo_label: Label
 var wname_label: Label
 var scope_overlay: Control
+var _scope_on: = false
+var _scope_a: = 0.0
 var battery: = 87.0
 var switch_t: = 0.0
 var switch_label: Label
@@ -259,6 +261,10 @@ func _process(dt: float) -> void :
 				_refresh_scoreboard()
 	_process_rest(dt)
 func _process_rest(dt: float) -> void :
+	_scope_a = lerpf(_scope_a, 1.0 if _scope_on else 0.0, minf(1.0, 10.0 * dt))
+	scope_overlay.modulate.a = _scope_a
+	if not _scope_on and _scope_a < 0.02:
+		scope_overlay.visible = false
 	var grain: ColorRect = root_ctrl.get_node("grain")
 	if grain:
 		(grain.material as ShaderMaterial).set_shader_parameter("u_time", Time.get_ticks_msec() / 1000.0)
@@ -672,7 +678,7 @@ func _build_menu() -> void :
 	var foot: = HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 10)
 	var f1: = Label.new()
-	f1.text = "BUILD 24 • v0.5.0 G1  КАРТА «ПЕРЕВАЛ-9»"
+	f1.text = "BUILD 25 • v0.5.1 G2  КАРТА «ПЕРЕВАЛ-9»"
 	f1.add_theme_font_size_override("font_size", 10)
 	f1.add_theme_color_override("font_color", COL_FOOT)
 	foot.add_child(f1)
@@ -936,7 +942,9 @@ func set_death_timer(t: float) -> void :
 	death_count.text = "РЕСПАВН ЧЕРЕЗ " + str(maxi(1, int(ceil(t))))
 
 func set_ads_scope(on: bool) -> void :
-	scope_overlay.visible = on
+	if on:
+		scope_overlay.visible = true
+	_scope_on = on
 
 func show_menu() -> void :
 	show_menu_only()

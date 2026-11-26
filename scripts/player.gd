@@ -45,6 +45,8 @@ var crouch: = false
 var grenades: = 2
 var throw_t: = 0.0
 var bloom: = 0.0
+var vm_base: Vector3 = Vector3.ZERO
+var bob_t: = 0.0
 var step_t: = 0.0
 var resupply_t: = 0.0
 const SHOP: = [
@@ -119,7 +121,7 @@ func _unhandled_input(event: InputEvent) -> void :
 		if motion_grace > 0.0:
 			return
 		var e: = event as InputEventMouseMotion
-		var ss: float = clampf(cam.fov / 75.0, 0.22, 1.0)
+		var ss: float = clampf(cam.fov / 75.0, 0.1, 1.0)
 		yaw -= e.relative.x * 0.0021 * main.mouse_sens * ss
 		pitch -= e.relative.y * 0.0021 * main.mouse_sens * ss
 		pitch = clampf(pitch, -1.45, 1.45)
@@ -204,7 +206,7 @@ func _physics_process(dt: float) -> void :
 		mx -= 1
 	if Input.is_physical_key_pressed(KEY_D):
 		mx += 1
-	var spd: float = 2.2 if crouch else (2.4 if ads else (7.0 if sprint else 4.7))
+	var spd: float = 2.2 if crouch else (3.0 if ads else (7.0 if sprint else 4.7))
 	var moving: = (mx != 0.0 or mz != 0.0)
 	var fwd: = Vector3( - sin(yaw), 0, - cos(yaw))
 	var right: = Vector3(cos(yaw), 0, - sin(yaw))
@@ -269,18 +271,22 @@ func _physics_process(dt: float) -> void :
 	rotation = Vector3(0, yaw, 0)
 	cam.position.y = lerpf(cam.position.y, 1.08 if crouch else EYE, minf(1.0, 10.0 * dt))
 	var scoped: bool = ads and (def["scope"] or _optic() == "pso")
-	var target_fov: float = 20.0 if scoped else def["ads_fov"] if ads else (79.0 if sprint else 75.0)
+	var scope_f: float = def["scope_fov"] if def["scope_fov"] > 0.0 else 20.0
+	var target_fov: float = scope_f if scoped else (def["ads_fov"] if ads else (79.0 if sprint else 75.0))
 	cam.fov = lerpf(cam.fov, target_fov, minf(1.0, 12.0 * dt))
-	var tp: Vector3
-	if vm_is_glb:
-		tp = def["ads_pos"] if ads else def["hip_pos"]
-		if ads and _optic() == "dot":
-			tp = Vector3(0, -0.068, def["ads_pos"].z)
-	else:
-		tp = def["ads_pos"] if ads else def["hip_pos"]
-		if ads and _optic() == "dot":
-			tp = Vector3(0, -0.068, def["ads_pos"].z)
-	vm_pivot.position = vm_pivot.position.lerp(tp, minf(1.0, 14.0 * dt))
+	var tp: Vector3 = def["ads_pos"] if ads else def["hip_pos"]
+	if ads and _optic() == "dot" and def.has("ads_dot"):
+		tp = def["ads_dot"]
+	elif ads and _optic() == "pso" and def.has("ads_pso"):
+		tp = def["ads_pso"]
+	vm_base = vm_base.lerp(tp, minf(1.0, 14.0 * dt))
+	var sp: float = Vector2(velocity.x, velocity.z).length()
+	bob_t += dt * (3.0 + sp * 2.0)
+	var bob_amp: float = clampf(sp / 4.7, 0.0, 1.0) * (0.25 if ads else 1.0)
+	var bob: Vector3 = Vector3(sin(bob_t) * 0.007 * bob_amp, - absf(sin(bob_t)) * 0.009 * bob_amp, 0.0)
+	var ts: float = Time.get_ticks_msec() * 0.001
+	var breathe: Vector3 = Vector3(sin(ts * 1.3) * 0.0018, sin(ts * 2.1) * 0.0022, 0.0) * (0.4 if ads else 1.0)
+	vm_pivot.position = vm_base + bob + breathe + Vector3(0.0, 0.0, recoil * 0.025)
 	vm_gun.visible = not scoped
 	recoil = maxf(0.0, recoil - dt * 6.0)
 	bloom = maxf(0.0, bloom - dt * 2.2)

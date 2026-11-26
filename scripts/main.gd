@@ -1,7 +1,7 @@
 extends Node3D
 
 
-const VER: = "0.5.0 G1"
+const VER: = "0.5.1 G2"
 
 var state: = "menu"
 var mouse_sens: = 1.0
